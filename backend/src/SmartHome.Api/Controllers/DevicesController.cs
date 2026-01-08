@@ -41,4 +41,43 @@ public class DevicesController(IDeviceRepository repo) : ControllerBase
 
         return Ok(device); // Return 200 code + object
     }
+    [HttpGet("{id}/turn-on")]
+    public IActionResult TurnOn(Guid id)
+    {
+        var device = _repo.GetById(id);
+        if (device == null)
+        {
+            return NotFound();
+        }
+        // MAGIA C# (Pattern Matching):
+        // Sprawdzamy: "Czy to urządzenie jest Żarówką?"
+        // Jeśli tak, to od razu traktuj je jako zmienną 'bulb' typu LightBulb.
+        if (device is LightBulb bulb)
+        {
+            bulb.IsOn = true;
+            // Tutaj normalnie byłoby _repo.Update(bulb), ale w pamięci RAM referencja działa tak, 
+            // że zmiana tutaj zmienia obiekt w liście repozytorium automatycznie.
+            
+            return Ok(bulb); // Zwracamy zaktualizowaną żarówkę
+        }
+
+        // Jeśli to nie żarówka (np. czujnik temperatury), nie możemy tego włączyć.
+        return BadRequest("This device cannot be turned on.");
+    }
+
+    [HttpGet("{id}/turn-off")]
+    public IActionResult TurnOff(Guid id)
+    {
+        var device = _repo.GetById(id);
+        if (device == null)
+        {
+            return NotFound();
+        }
+        if (device is LightBulb bulb)
+        {
+            bulb.IsOn = false;            
+            return Ok(bulb);
+        }
+        return BadRequest("This device cannot be turned on.");
+    }
 }
