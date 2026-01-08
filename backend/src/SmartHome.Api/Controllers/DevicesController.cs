@@ -57,7 +57,7 @@ public class DevicesController(IDeviceRepository repo) : ControllerBase
             bulb.IsOn = true;
             // Tutaj normalnie byłoby _repo.Update(bulb), ale w pamięci RAM referencja działa tak, 
             // że zmiana tutaj zmienia obiekt w liście repozytorium automatycznie.
-            
+
             return Ok(bulb); // Zwracamy zaktualizowaną żarówkę
         }
 
@@ -75,9 +75,31 @@ public class DevicesController(IDeviceRepository repo) : ControllerBase
         }
         if (device is LightBulb bulb)
         {
-            bulb.IsOn = false;            
+            bulb.IsOn = false;
             return Ok(bulb);
         }
         return BadRequest("This device cannot be turned on.");
+    }
+    [HttpPost("sensor")]
+    public IActionResult AddSensor([FromBody] CreateSensorRequest request)
+    {
+        var newSensor = new TemperatureSensor(request.Name, request.Room);
+        _repo.Add(newSensor);
+        return CreatedAtAction(nameof(GetDeviceById), new { id = newSensor.Id }, newSensor);
+    }
+    [HttpGet("{id}/temperature")]
+    public IActionResult GetTemperature(Guid id)
+    {
+        var device = _repo.GetById(id);
+        if (device == null)
+        {
+            return NotFound();
+        }
+        if (device is TemperatureSensor sensor)
+        {
+            double currentTemp = sensor.GetReading();
+            return Ok(new { temperature = currentTemp, unit = "Celsius" });
+        }
+        return BadRequest("This device does not support temperature readings.");
     }
 }
