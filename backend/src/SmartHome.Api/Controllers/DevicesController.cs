@@ -26,6 +26,19 @@ public class DevicesController(IDeviceRepository repo) : ControllerBase
 
         // Return 201 code 'Created' (Standard REST API)
         // return id of that created obj
-        return CreatedAtAction(nameof(GetDevices), new { id = newBulb.Id }, newBulb);
+        return CreatedAtAction(nameof(GetDeviceById), new { id = newBulb.Id }, newBulb);
+    }
+
+    [HttpGet("{id}")] // api/devices/[guid]
+    public IActionResult GetDeviceById(Guid id)
+    {
+        var device = _repo.GetById(id);
+
+        if (device == null)
+        {
+            return NotFound(); // Return 404 code
+        }
+
+        return Ok(device); // Return 200 code + object
     }
 }
