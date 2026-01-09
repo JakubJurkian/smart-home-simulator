@@ -19,4 +19,8 @@ public class InMemoryDeviceRepository : IDeviceRepository
     {
 
     }
+    public void Delete(Guid id)
+    {
+
+    }
 }
