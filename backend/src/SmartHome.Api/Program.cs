@@ -29,10 +29,26 @@ builder.Services.AddDbContext<SmartHomeDbContext>(options =>
 // We changed AddSingleton to AddScoped. DB lives shortly (for request)
 builder.Services.AddScoped<IDeviceRepository, SqlDeviceRepository>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()  // React (localhost:5173) now can connect
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 // PIPELINE SECTION (Middleware)
 // Here we define the request handling pipeline
+
+app.UseCors("AllowAll");
 
 // Enable Swagger UI only in Dev env.
 if (app.Environment.IsDevelopment())
@@ -42,7 +58,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection(); // Redirect HTTP to HTTPS automatically
-
+app.UseAuthorization();
 app.MapControllers(); // Map endpoints from [ApiController] classes
 
 app.Run(); // Start the app
