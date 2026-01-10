@@ -4,7 +4,19 @@ using SmartHome.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Infrastructure.Repositories;
 
+using Serilog;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Serilog conf.
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        // download logs level settings (warning/info) from appsettings.json
+        .ReadFrom.Configuration(context.Configuration)
+        .WriteTo.Console()
+        .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day);
+});
 
 // SERVICES SECTION (DI Container)
 // register dependencies and tools
@@ -49,6 +61,8 @@ var app = builder.Build();
 // Here we define the request handling pipeline
 
 app.UseCors("AllowAll");
+// logs all HTTP requests.
+app.UseSerilogRequestLogging();
 
 // Enable Swagger UI only in Dev env.
 if (app.Environment.IsDevelopment())
