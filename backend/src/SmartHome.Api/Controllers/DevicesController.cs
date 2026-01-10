@@ -7,15 +7,14 @@ namespace SmartHome.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DevicesController(IDeviceRepository repo, ILogger<DevicesController> logger) : ControllerBase
+public class DevicesController(IDeviceService service, ILogger<DevicesController> logger) : ControllerBase
 {
-    private readonly IDeviceRepository _repo = repo;
 
     [HttpGet]
     public IActionResult GetDevices()
     {
         logger.LogInformation("Retrieving the list of all devices from the database...");
-        return Ok(_repo.GetAll());
+        return Ok(service.GetAllDevices());
     }
 
     [HttpPost("lightbulb")] // api/devices/lightbulb
@@ -24,137 +23,99 @@ public class DevicesController(IDeviceRepository repo, ILogger<DevicesController
         logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.Room);
 
         // write data from DTO (form) to real entity
-        var newBulb = new LightBulb(request.Name, request.Room);
-        
-        // Save to repo
-        _repo.Add(newBulb);
+        var id = service.AddLightBulb(request.Name, request.Room);
 
-        logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", newBulb.Id);
+        logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
 
         // Return 201 code 'Created' (Standard REST API)
-        return CreatedAtAction(nameof(GetDeviceById), new { id = newBulb.Id }, newBulb);
+        return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
     }
 
     [HttpGet("{id}")] // api/devices/[guid]
     public IActionResult GetDeviceById(Guid id)
     {
-        var device = _repo.GetById(id);
-
+        var device = service.GetDeviceById(id);
         if (device == null)
         {
-            logger.LogWarning("GetDeviceById failed: Device with ID {DeviceId} was not found.", id);
-            return NotFound(); // Return 404 code
+            logger.LogWarning("Device {DeviceId} not found.", id);
+            return NotFound();
         }
 
         // logger.LogInformation("Device found: {DeviceName} ({DeviceId})", device.Name, device.Id);
-        
+
         return Ok(device); // Return 200 code + object
     }
 
     [HttpPost("{id}/turn-on")]
     public IActionResult TurnOn(Guid id)
     {
-        var device = _repo.GetById(id);
+        var success = service.TurnOn(id);
 
-        if (device == null)
+        if (success)
         {
-             logger.LogWarning("TurnOn failed: Device with ID {DeviceId} not found.", id);
-             return NotFound();
+            logger.LogInformation("Turned ON device: {DeviceId}", id);
+            var device = service.GetDeviceById(id);
+            return Ok(new { message = "Device turned on", device });
         }
 
-        if (device is LightBulb bulb)
-        {
-            bulb.TurnOn();
-
-            // We save changes to db
-            _repo.Update(bulb);
-            
-            logger.LogInformation("Turned ON the light: {DeviceName} ({DeviceId})", bulb.Name, bulb.Id);
-            return Ok(new { message = "Light turned on", isOn = bulb.IsOn });
-        }
-        
-        logger.LogWarning("TurnOn failed: Device {DeviceId} is not a LightBulb!", id);
-        return BadRequest("Device is not a light bulb.");
+        logger.LogWarning("Failed to turn on device {DeviceId}", id);
+        return BadRequest("Could not turn on device (not found or not a light bulb).");
     }
 
     [HttpPost("{id}/turn-off")]
     public IActionResult TurnOff(Guid id)
     {
-        var device = _repo.GetById(id);
+        var success = service.TurnOff(id);
 
-        if (device == null)
+        if (success)
         {
-             logger.LogWarning("TurnOff failed: Device with ID {DeviceId} not found.", id);
-             return NotFound();
+            logger.LogInformation("Turned OFF device: {DeviceId}", id);
+            var device = service.GetDeviceById(id);
+            return Ok(new { message = "Device turned off", device });
         }
 
-        if (device is LightBulb bulb)
-        {
-            bulb.TurnOff();
-
-            _repo.Update(bulb);
-
-            logger.LogInformation("Turned OFF the light: {DeviceName} ({DeviceId})", bulb.Name, bulb.Id);
-            return Ok(new { message = "Light turned off", isOn = bulb.IsOn });
-        }
-        
-        logger.LogWarning("TurnOff failed: Device {DeviceId} is not a LightBulb!", id);
-        return BadRequest("Device is not a light bulb.");
+        logger.LogWarning("Failed to turn off device {DeviceId}", id);
+        return BadRequest("Could not turn off device.");
     }
 
     [HttpPost("sensor")]
     public IActionResult AddSensor([FromBody] CreateSensorRequest request)
     {
-        logger.LogInformation("Request to add a new Sensor: '{Name}' in '{Room}'", request.Name, request.Room);
+        logger.LogInformation("Request to add Sensor: '{Name}'", request.Name);
 
-        var newSensor = new TemperatureSensor(request.Name, request.Room);
-        _repo.Add(newSensor);
+        var id = service.AddTemperatureSensor(request.Name, request.Room);
 
-        logger.LogInformation("Successfully created Sensor with ID: {DeviceId}", newSensor.Id);
-
-        return CreatedAtAction(nameof(GetDeviceById), new { id = newSensor.Id }, newSensor);
+        logger.LogInformation("Created Sensor with ID: {DeviceId}", id);
+        return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
     }
 
     [HttpGet("{id}/temperature")]
     public IActionResult GetTemperature(Guid id)
     {
-        var device = _repo.GetById(id);
-        
-        if (device == null)
+        var temp = service.GetTemperature(id);
+
+        if (temp.HasValue)
         {
-            logger.LogWarning("GetTemperature failed: Device with ID {DeviceId} not found.", id);
-            return NotFound();
+            logger.LogInformation("Read temperature for {DeviceId}: {Temp}", id, temp);
+            return Ok(new { temperature = temp, unit = "Celsius" });
         }
 
-        if (device is TemperatureSensor sensor)
-        {
-            double currentTemp = sensor.GetReading();
-            
-            logger.LogInformation("Read temperature for '{DeviceName}': {Temp} C", sensor.Name, currentTemp);
-            
-            return Ok(new { temperature = currentTemp, unit = "Celsius" });
-        }
-        
-        logger.LogWarning("GetTemperature failed: Device {DeviceId} does not support temperature readings.", id);
-        return BadRequest("This device does not support temperature readings.");
+        logger.LogWarning("Failed to read temperature for {DeviceId}", id);
+        return BadRequest("Device not found or does not support temperature.");
     }
 
     [HttpDelete("{id}")]
     public IActionResult Delete(Guid id)
     {
-        var device = _repo.GetById(id);
-        
-        if (device == null)
+        var success = service.DeleteDevice(id);
+
+        if (!success)
         {
-            logger.LogWarning("Delete failed: Device with ID {DeviceId} not found.", id);
+            logger.LogWarning("Delete failed: Device {DeviceId} not found.", id);
             return NotFound();
         }
 
-        _repo.Delete(id);
-        
-        logger.LogInformation("Successfully deleted device with ID: {DeviceId}", id);
-
-        // 204 No Content
-        return NoContent();
+        logger.LogInformation("Deleted device: {DeviceId}", id);
+        return NoContent(); // 204 code
     }
 }

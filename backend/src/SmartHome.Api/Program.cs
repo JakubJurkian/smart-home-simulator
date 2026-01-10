@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartHome.Infrastructure.Repositories;
 
 using Serilog;
+using SmartHome.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,7 @@ builder.Services.AddDbContext<SmartHomeDbContext>(options =>
 
 // We changed AddSingleton to AddScoped. DB lives shortly (for request)
 builder.Services.AddScoped<IDeviceRepository, SqlDeviceRepository>();
+builder.Services.AddScoped<IDeviceService, DeviceService>();
 
 builder.Services.AddCors(options =>
 {
