@@ -1,0 +1,51 @@
+2026-01-11 00:03:42.240 +01:00 [INF] Read temperature for "70ca80a0-e4c6-49f9-bc72-48fb1817a36c": 20.8
+2026-01-11 00:03:42.256 +01:00 [INF] HTTP GET /api/devices/70ca80a0-e4c6-49f9-bc72-48fb1817a36c/temperature responded 200 in 36.3968 ms
+2026-01-11 00:03:43.305 +01:00 [INF] Read temperature for "75360ba4-be5c-481a-874d-49d26eb9638d": 21
+2026-01-11 00:03:43.307 +01:00 [INF] HTTP GET /api/devices/75360ba4-be5c-481a-874d-49d26eb9638d/temperature responded 200 in 3.9762 ms
+2026-01-11 00:03:45.454 +01:00 [INF] Turned ON device: "ad9d8e34-7d1d-4d86-911e-909ab5474bb4"
+2026-01-11 00:03:45.457 +01:00 [INF] HTTP POST /api/devices/ad9d8e34-7d1d-4d86-911e-909ab5474bb4/turn-on responded 200 in 23.9786 ms
+2026-01-11 00:03:45.463 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:03:45.467 +01:00 [INF] HTTP GET /api/devices responded 200 in 4.0336 ms
+2026-01-11 00:03:46.551 +01:00 [INF] Turned OFF device: "ad9d8e34-7d1d-4d86-911e-909ab5474bb4"
+2026-01-11 00:03:46.553 +01:00 [INF] HTTP POST /api/devices/ad9d8e34-7d1d-4d86-911e-909ab5474bb4/turn-off responded 200 in 17.8828 ms
+2026-01-11 00:03:46.558 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:03:46.561 +01:00 [INF] HTTP GET /api/devices responded 200 in 3.5430 ms
+2026-01-11 00:03:48.737 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:03:48.741 +01:00 [INF] HTTP GET /api/devices responded 200 in 3.7905 ms
+2026-01-11 00:03:48.743 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:03:48.749 +01:00 [INF] HTTP GET /api/devices responded 200 in 5.9038 ms
+2026-01-11 00:04:28.349 +01:00 [INF] Deleted device: "ad9d8e34-7d1d-4d86-911e-909ab5474bb4"
+2026-01-11 00:04:28.352 +01:00 [INF] HTTP DELETE /api/devices/ad9d8e34-7d1d-4d86-911e-909ab5474bb4 responded 204 in 40.8351 ms
+2026-01-11 00:04:28.362 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:04:28.366 +01:00 [INF] HTTP GET /api/devices responded 200 in 5.2088 ms
+2026-01-11 00:04:44.744 +01:00 [INF] Request to add Sensor: 'Test'
+2026-01-11 00:04:44.809 +01:00 [INF] Created Sensor with ID: "d6cd42dc-8ab2-40da-97da-e2548817c3e6"
+2026-01-11 00:04:44.830 +01:00 [INF] HTTP POST /api/devices/sensor responded 201 in 108.1534 ms
+2026-01-11 00:04:44.835 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:04:44.838 +01:00 [INF] HTTP GET /api/devices responded 200 in 3.3377 ms
+2026-01-11 00:04:45.975 +01:00 [INF] Read temperature for "d6cd42dc-8ab2-40da-97da-e2548817c3e6": 20.9
+2026-01-11 00:04:45.977 +01:00 [INF] HTTP GET /api/devices/d6cd42dc-8ab2-40da-97da-e2548817c3e6/temperature responded 200 in 5.6304 ms
+2026-01-11 00:04:47.497 +01:00 [INF] Read temperature for "70ca80a0-e4c6-49f9-bc72-48fb1817a36c": 21.2
+2026-01-11 00:04:47.500 +01:00 [INF] HTTP GET /api/devices/70ca80a0-e4c6-49f9-bc72-48fb1817a36c/temperature responded 200 in 5.4798 ms
+2026-01-11 00:04:48.358 +01:00 [INF] Read temperature for "75360ba4-be5c-481a-874d-49d26eb9638d": 20.5
+2026-01-11 00:04:48.360 +01:00 [INF] HTTP GET /api/devices/75360ba4-be5c-481a-874d-49d26eb9638d/temperature responded 200 in 5.4030 ms
+2026-01-11 00:04:50.311 +01:00 [INF] Deleted device: "d6cd42dc-8ab2-40da-97da-e2548817c3e6"
+2026-01-11 00:04:50.313 +01:00 [INF] HTTP DELETE /api/devices/d6cd42dc-8ab2-40da-97da-e2548817c3e6 responded 204 in 12.8431 ms
+2026-01-11 00:04:50.322 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:04:50.325 +01:00 [INF] HTTP GET /api/devices responded 200 in 3.6021 ms
+2026-01-11 00:06:32.874 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:06:32.879 +01:00 [INF] HTTP GET /api/devices responded 200 in 6.0368 ms
+2026-01-11 00:06:32.881 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:06:32.887 +01:00 [INF] HTTP GET /api/devices responded 200 in 6.9651 ms
+2026-01-11 00:06:36.686 +01:00 [INF] Turned ON device: "84f201ff-02b2-4014-9fc5-d3e83fc6468f"
+2026-01-11 00:06:36.688 +01:00 [INF] HTTP POST /api/devices/84f201ff-02b2-4014-9fc5-d3e83fc6468f/turn-on responded 200 in 14.6012 ms
+2026-01-11 00:06:36.693 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:06:36.697 +01:00 [INF] HTTP GET /api/devices responded 200 in 3.6986 ms
+2026-01-11 00:06:38.521 +01:00 [INF] Turned OFF device: "84f201ff-02b2-4014-9fc5-d3e83fc6468f"
+2026-01-11 00:06:38.524 +01:00 [INF] HTTP POST /api/devices/84f201ff-02b2-4014-9fc5-d3e83fc6468f/turn-off responded 200 in 20.1517 ms
+2026-01-11 00:06:38.530 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:06:38.534 +01:00 [INF] HTTP GET /api/devices responded 200 in 3.9346 ms
+2026-01-11 00:09:14.599 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:09:14.604 +01:00 [INF] HTTP GET /api/devices responded 200 in 4.5436 ms
+2026-01-11 00:09:14.619 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 00:09:14.624 +01:00 [INF] HTTP GET /api/devices responded 200 in 4.9108 ms

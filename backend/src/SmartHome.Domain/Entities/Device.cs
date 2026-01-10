@@ -1,5 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace SmartHome.Domain.Entities;
 
+[JsonDerivedType(typeof(LightBulb), typeDiscriminator: "LightBulb")]
+[JsonDerivedType(typeof(TemperatureSensor), typeDiscriminator: "TemperatureSensor")]
 public abstract class Device(string name, string room, string type)
 {
     // Globally Unique Id
