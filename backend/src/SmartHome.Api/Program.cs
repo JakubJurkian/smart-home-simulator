@@ -46,6 +46,7 @@ builder.Services.AddScoped<IDeviceRepository, SqlDeviceRepository>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 
 builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddCors(options =>
 {
