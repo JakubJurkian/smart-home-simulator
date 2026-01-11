@@ -47,6 +47,7 @@ const AuthForm = ({ onLoginSuccess }: { onLoginSuccess: (user: User) => void }) 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        credentials: "include", // Added credentials
       });
 
       const data = await response.json();
@@ -187,7 +188,8 @@ function App() {
   const [temps, setTemps] = useState<Record<string, number>>({});
 
   const fetchDevices = () => {
-    fetch(`${API_URL}/devices`)
+    // Added credentials
+    fetch(`${API_URL}/devices`, { credentials: "include" })
       .then(res => res.json())
       .then(setDevices)
       .catch(console.error);
@@ -212,23 +214,33 @@ function App() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, room }),
+      credentials: "include", // Added credentials
     }).then(res => res.ok ? fetchDevices() : alert("Error adding device"));
   };
 
   const handleToggle = (id: string, action: "turn-on" | "turn-off") => {
-    fetch(`${API_URL}/devices/${id}/${action}`, { method: "POST" })
+    // Added credentials
+    fetch(`${API_URL}/devices/${id}/${action}`, { 
+      method: "POST", 
+      credentials: "include" 
+    })
       .then(res => res.ok ? fetchDevices() : alert("Error toggling device"));
   };
 
   const handleDelete = (id: string) => {
     if (confirm("Delete this device?")) {
-      fetch(`${API_URL}/devices/${id}`, { method: "DELETE" })
+      // Added credentials
+      fetch(`${API_URL}/devices/${id}`, { 
+        method: "DELETE", 
+        credentials: "include" 
+      })
         .then(res => res.ok && fetchDevices());
     }
   };
 
   const handleCheckTemp = (id: string) => {
-    fetch(`${API_URL}/devices/${id}/temperature`)
+    // Added credentials
+    fetch(`${API_URL}/devices/${id}/temperature`, { credentials: "include" })
       .then(res => res.json())
       .then(data => setTemps(prev => ({ ...prev, [id]: data.temperature })))
       .catch(() => alert("Error reading temp"));
@@ -246,7 +258,7 @@ function App() {
         {/* Header with Logout */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-blue-600">
-             🏠 Smart Home <span className="text-gray-400 text-lg ml-2 font-normal">| {user.username}</span>
+              🏠 Smart Home <span className="text-gray-400 text-lg ml-2 font-normal">| {user.username}</span>
           </h1>
           <button 
             onClick={handleLogout} 

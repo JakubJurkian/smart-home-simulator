@@ -13,8 +13,18 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpGet]
     public IActionResult GetDevices()
     {
-        logger.LogInformation("Retrieving the list of all devices from the database...");
-        return Ok(service.GetAllDevices());
+        try
+        {
+            var userId = GetCurrentUserId();
+            var devices = service.GetAllDevices(userId);
+            logger.LogInformation("Retrieving the list of all devices from the database...");
+            return Ok(devices);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+
     }
 
     [HttpPost("lightbulb")] // api/devices/lightbulb
@@ -22,19 +32,23 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     {
         logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.Room);
 
-        // write data from DTO (form) to real entity
-        var id = service.AddLightBulb(request.Name, request.Room);
-
-        logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
-
-        // Return 201 code 'Created' (Standard REST API)
-        return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
+        
+        try
+        {
+            var userId = GetCurrentUserId();
+            var id = service.AddLightBulb(request.Name, request.Room, userId);
+            logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
+            return CreatedAtAction(nameof(GetDevices), new { id });
+            
+        }
+        catch (UnauthorizedAccessException) { return Unauthorized(); }
     }
 
     [HttpGet("{id}")] // api/devices/[guid]
     public IActionResult GetDeviceById(Guid id)
     {
-        var device = service.GetDeviceById(id);
+        var userId = GetCurrentUserId();
+        var device = service.GetDeviceById(id, userId);
         if (device == null)
         {
             logger.LogWarning("Device {DeviceId} not found.", id);
@@ -49,12 +63,13 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpPost("{id}/turn-on")]
     public IActionResult TurnOn(Guid id)
     {
-        var success = service.TurnOn(id);
+        var userId = GetCurrentUserId();
+        var success = service.TurnOn(id, userId);
 
         if (success)
         {
             logger.LogInformation("Turned ON device: {DeviceId}", id);
-            var device = service.GetDeviceById(id);
+            var device = service.GetDeviceById(id, userId);
             return Ok(new { message = "Device turned on", device });
         }
 
@@ -65,12 +80,13 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpPost("{id}/turn-off")]
     public IActionResult TurnOff(Guid id)
     {
-        var success = service.TurnOff(id);
+        var userId = GetCurrentUserId();
+        var success = service.TurnOff(id, userId);
 
         if (success)
         {
             logger.LogInformation("Turned OFF device: {DeviceId}", id);
-            var device = service.GetDeviceById(id);
+            var device = service.GetDeviceById(id, userId);
             return Ok(new { message = "Device turned off", device });
         }
 
@@ -82,8 +98,8 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     public IActionResult AddSensor([FromBody] CreateSensorRequest request)
     {
         logger.LogInformation("Request to add Sensor: '{Name}'", request.Name);
-
-        var id = service.AddTemperatureSensor(request.Name, request.Room);
+        var userId = GetCurrentUserId();
+        var id = service.AddTemperatureSensor(request.Name, request.Room, userId);
 
         logger.LogInformation("Created Sensor with ID: {DeviceId}", id);
         return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
@@ -92,7 +108,8 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpGet("{id}/temperature")]
     public IActionResult GetTemperature(Guid id)
     {
-        var temp = service.GetTemperature(id);
+        var userId = GetCurrentUserId();
+        var temp = service.GetTemperature(id, userId);
 
         if (temp.HasValue)
         {
@@ -107,7 +124,8 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpDelete("{id}")]
     public IActionResult Delete(Guid id)
     {
-        var success = service.DeleteDevice(id);
+        var userId = GetCurrentUserId();
+        var success = service.DeleteDevice(id, userId);
 
         if (!success)
         {
@@ -117,5 +135,15 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 
         logger.LogInformation("Deleted device: {DeviceId}", id);
         return NoContent(); // 204 code
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
+            Guid.TryParse(userIdString, out var userId))
+        {
+            return userId;
+        }
+        throw new UnauthorizedAccessException("User not logged in");
     }
 }

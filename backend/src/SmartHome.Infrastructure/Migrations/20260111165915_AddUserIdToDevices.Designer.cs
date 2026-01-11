@@ -11,8 +11,8 @@ using SmartHome.Infrastructure.Persistence;
 namespace SmartHome.Infrastructure.Migrations
 {
     [DbContext(typeof(SmartHomeDbContext))]
-    [Migration("20260109113739_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260111165915_AddUserIdToDevices")]
+    partial class AddUserIdToDevices
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,6 +43,9 @@ namespace SmartHome.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("Devices");
@@ -50,6 +53,39 @@ namespace SmartHome.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("Device");
 
                     b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("SmartHome.Domain.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("SmartHome.Domain.Entities.LightBulb", b =>

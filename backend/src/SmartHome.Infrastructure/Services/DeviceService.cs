@@ -5,34 +5,34 @@ namespace SmartHome.Infrastructure.Services;
 
 public class DeviceService(IDeviceRepository repository) : IDeviceService
 {
-    public IEnumerable<Device> GetAllDevices()
+    public IEnumerable<Device> GetAllDevices(Guid userId)
     {
-        return repository.GetAll();
+        return repository.GetAll(userId);
     }
 
-    public Device? GetDeviceById(Guid id)
+    public Device? GetDeviceById(Guid id, Guid userId)
     {
-        return repository.GetById(id);
+        return repository.Get(id, userId);
     }
 
-    public Guid AddLightBulb(string name, string room)
+    public Guid AddLightBulb(string name, string room, Guid userId)
     {
-        var bulb = new LightBulb(name, room);
+        var bulb = new LightBulb(name, room) { UserId = userId };
         repository.Add(bulb);
         return bulb.Id;
     }
 
-    public Guid AddTemperatureSensor(string name, string room)
+    public Guid AddTemperatureSensor(string name, string room, Guid userId)
     {
-        var sensor = new TemperatureSensor(name, room);
+        var sensor = new TemperatureSensor(name, room) { UserId = userId };
         repository.Add(sensor);
         return sensor.Id;
     }
 
-    public bool TurnOn(Guid id)
+    public bool TurnOn(Guid id, Guid userId)
     {
-        var device = repository.GetById(id);
-        
+        var device = repository.Get(id, userId);
+
         // Pattern Matching
         if (device is LightBulb bulb)
         {
@@ -43,10 +43,10 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
         return false;
     }
 
-    public bool TurnOff(Guid id)
+    public bool TurnOff(Guid id, Guid userId)
     {
-        var device = repository.GetById(id);
-        
+        var device = repository.Get(id, userId);
+
         if (device is LightBulb bulb)
         {
             bulb.TurnOff();
@@ -56,9 +56,9 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
         return false;
     }
 
-    public double? GetTemperature(Guid id)
+    public double? GetTemperature(Guid id, Guid userId)
     {
-        var device = repository.GetById(id);
+        var device = repository.Get(id, userId);
         if (device is TemperatureSensor sensor)
         {
             return sensor.GetReading();
@@ -66,9 +66,9 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
         return null;
     }
 
-    public bool DeleteDevice(Guid id)
+    public bool DeleteDevice(Guid id, Guid userId)
     {
-        var device = repository.GetById(id);
+        var device = repository.Get(id, userId);
         if (device == null) return false;
 
         repository.Delete(id);

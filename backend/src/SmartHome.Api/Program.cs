@@ -50,11 +50,12 @@ builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.AllowAnyOrigin()  // React (localhost:5173) now can connect
+        policy.WithOrigins("http://localhost:5173")  // React (localhost:5173) now can connect
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -69,7 +70,7 @@ var app = builder.Build();
 // PIPELINE SECTION (Middleware)
 // Here we define the request handling pipeline
 
-app.UseCors("AllowAll");
+app.UseCors("AllowReactApp");
 // logs all HTTP requests.
 app.UseSerilogRequestLogging();
 

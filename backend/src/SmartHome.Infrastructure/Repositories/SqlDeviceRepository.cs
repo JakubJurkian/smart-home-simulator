@@ -16,16 +16,16 @@ public class SqlDeviceRepository(SmartHomeDbContext context) : IDeviceRepository
         context.SaveChanges();
     }
 
-    public IEnumerable<Device> GetAll()
+    public IEnumerable<Device> GetAll(Guid userId)
     {
         // Download all to list
-        return [.. context.Devices];
+        return [.. context.Devices.Where(d => d.UserId == userId)];
     }
 
-    public Device? GetById(Guid id)
+    public Device? Get(Guid id, Guid userId)
     {
         // Find by ID (null if not found)
-        return context.Devices.Find(id);
+        return context.Devices.FirstOrDefault(d => d.Id == id && d.UserId == userId);
     }
 
     public void Update(Device device)

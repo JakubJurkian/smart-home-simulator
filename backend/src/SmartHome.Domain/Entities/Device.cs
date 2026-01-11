@@ -11,4 +11,6 @@ public abstract class Device(string name, string room, string type)
     public string Name { get; private set; } = name;
     public string Room { get; private set; } = room;
     public string Type { get; protected set; } = type;
+
+    public Guid UserId { get; set; }
 }

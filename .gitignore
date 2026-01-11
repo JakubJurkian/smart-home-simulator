@@ -18,6 +18,10 @@ sciaga.txt
 appsettings.Local.json
 appsettings.Development.json
 
+# logs & database files
+logs/
+*.db
+
 # FRONTEND
 ## Dependencies
 node_modules/
