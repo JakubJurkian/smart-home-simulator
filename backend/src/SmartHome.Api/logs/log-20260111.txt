@@ -49,3 +49,21 @@
 2026-01-11 00:09:14.604 +01:00 [INF] HTTP GET /api/devices responded 200 in 4.5436 ms
 2026-01-11 00:09:14.619 +01:00 [INF] Retrieving the list of all devices from the database...
 2026-01-11 00:09:14.624 +01:00 [INF] HTTP GET /api/devices responded 200 in 4.9108 ms
+2026-01-11 11:17:27.606 +01:00 [INF]  TCP Server started on port 9000. Waiting for connections...
+2026-01-11 12:35:49.966 +01:00 [INF] HTTP GET /swagger responded 301 in 21.4386 ms
+2026-01-11 12:35:50.547 +01:00 [INF] HTTP GET /swagger/v1/swagger.json responded 200 in 182.0663 ms
+2026-01-11 12:41:16.059 +01:00 [WRN] Failed to determine the https port for redirect.
+2026-01-11 12:41:18.321 +01:00 [INF] HTTP POST /api/users/register responded 201 in 2274.9571 ms
+2026-01-11 12:51:16.323 +01:00 [INF] HTTP POST /api/users/register responded 400 in 53.1578 ms
+2026-01-11 12:51:33.571 +01:00 [INF]  TCP Server started on port 9000. Waiting for connections...
+2026-01-11 12:51:37.616 +01:00 [WRN] Failed to determine the https port for redirect.
+2026-01-11 12:51:39.011 +01:00 [WRN] Registration failed for rogalito@bambito.russia. Reason: Email is already taken.
+2026-01-11 12:51:39.029 +01:00 [INF] HTTP POST /api/users/register responded 400 in 1438.3919 ms
+2026-01-11 12:51:51.355 +01:00 [INF] User registered successfully. New ID: "ffe793a4-efa5-4e75-8de0-18a3289455fb"
+2026-01-11 12:51:51.400 +01:00 [INF] HTTP POST /api/users/register responded 201 in 746.4168 ms
+2026-01-11 12:59:58.196 +01:00 [INF] Login attempt for email: string
+2026-01-11 12:59:58.289 +01:00 [WRN] Login failed for string (Invalid credentials)
+2026-01-11 12:59:58.292 +01:00 [INF] HTTP POST /api/users/login responded 401 in 112.5200 ms
+2026-01-11 13:00:27.239 +01:00 [INF] Login attempt for email: rogalito@bambito.russi
+2026-01-11 13:00:27.431 +01:00 [INF] User logged in successfully: "ffe793a4-efa5-4e75-8de0-18a3289455fb"
+2026-01-11 13:00:27.448 +01:00 [INF] HTTP POST /api/users/login responded 200 in 210.2237 ms

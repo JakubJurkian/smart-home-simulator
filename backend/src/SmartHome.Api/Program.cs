@@ -33,8 +33,8 @@ builder.Services.AddSwaggerGen();
 
 // Konfiguracja Bazy Danych
 builder.Services.AddDbContext<SmartHomeDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SmartHome.Infrastructure")));
+// line necessary for migration
 // REPOSITORY REGISTRATION
 // AddSingleton because we store data in memory (RAM)
 // for a database, we use AddScoped
@@ -44,6 +44,9 @@ builder.Services.AddDbContext<SmartHomeDbContext>(options =>
 // We changed AddSingleton to AddScoped. DB lives shortly (for request)
 builder.Services.AddScoped<IDeviceRepository, SqlDeviceRepository>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
+
+builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddCors(options =>
 {
