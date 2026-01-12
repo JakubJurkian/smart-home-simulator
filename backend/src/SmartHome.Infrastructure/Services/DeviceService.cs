@@ -3,7 +3,7 @@ using SmartHome.Domain.Interfaces;
 
 namespace SmartHome.Infrastructure.Services;
 
-public class DeviceService(IDeviceRepository repository) : IDeviceService
+public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifier) : IDeviceService
 {
     public IEnumerable<Device> GetAllDevices(Guid userId)
     {
@@ -19,6 +19,7 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
     {
         var bulb = new LightBulb(name, room) { UserId = userId };
         repository.Add(bulb);
+        _ = notifier.NotifyDeviceChanged();
         return bulb.Id;
     }
 
@@ -26,6 +27,7 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
     {
         var sensor = new TemperatureSensor(name, room) { UserId = userId };
         repository.Add(sensor);
+        _ = notifier.NotifyDeviceChanged();
         return sensor.Id;
     }
 
@@ -38,6 +40,7 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
         {
             bulb.TurnOn();
             repository.Update(bulb);
+            _ = notifier.NotifyDeviceChanged();
             return true;
         }
         return false;
@@ -51,6 +54,7 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
         {
             bulb.TurnOff();
             repository.Update(bulb);
+            _ = notifier.NotifyDeviceChanged();
             return true;
         }
         return false;
@@ -72,6 +76,7 @@ public class DeviceService(IDeviceRepository repository) : IDeviceService
         if (device == null) return false;
 
         repository.Delete(id);
+        _ = notifier.NotifyDeviceChanged();
         return true;
     }
 }

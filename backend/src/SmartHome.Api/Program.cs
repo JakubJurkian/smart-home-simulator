@@ -9,6 +9,9 @@ using SmartHome.Infrastructure.Services;
 
 using SmartHome.Api.BackgroundServices;
 
+using SmartHome.Api.Hubs;
+using SmartHome.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Serilog conf.
@@ -35,6 +38,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<SmartHomeDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SmartHome.Infrastructure")));
 // line necessary for migration
+
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IDeviceNotifier, SignalRNotifier>();
+
 // REPOSITORY REGISTRATION
 // AddSingleton because we store data in memory (RAM)
 // for a database, we use AddScoped
@@ -84,5 +91,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection(); // Redirect HTTP to HTTPS automatically
 app.UseAuthorization();
 app.MapControllers(); // Map endpoints from [ApiController] classes
+
+app.MapHub<SmartHomeHub>("/hubs/smarthome"); //endpoint for WebSockets
 
 app.Run(); // Start the app
