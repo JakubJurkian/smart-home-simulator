@@ -126,7 +126,7 @@ public class TcpSmartHomeServer : BackgroundService
                         status = (d as dynamic).IsOn == true ? "[ON] 💡" : "[OFF] 🌑";
                     
                     if (d.Type.ToLower().Contains("sensor")) 
-                        status = $"[TEMP: {(d as dynamic).LastTemperature ?? "--"}°C] 🌡️";
+                        status = $"[TEMP: {(d as dynamic).CurrentTemperature ?? "--"}°C] 🌡️";
 
                     sb.AppendLine($"{d.Id} | {d.Name} ({d.Room}) {status}");
                 }

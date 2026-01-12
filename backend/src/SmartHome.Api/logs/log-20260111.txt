@@ -312,3 +312,24 @@ Microsoft.Data.Sqlite.SqliteException (0x80004005): SQLite Error 1: 'no such tab
 2026-01-11 19:16:27.896 +01:00 [INF] HTTP POST /api/devices/c87ed9b4-200a-4097-aea6-a1741d86fe36/turn-on responded 200 in 5.6255 ms
 2026-01-11 19:16:27.900 +01:00 [INF] Retrieving the list of all devices from the database...
 2026-01-11 19:16:27.901 +01:00 [INF] HTTP GET /api/devices responded 200 in 1.7439 ms
+2026-01-11 19:50:32.655 +01:00 [INF] TCP Server started on port 9000. Waiting for connections...
+2026-01-11 19:50:48.286 +01:00 [WRN] Failed to determine the https port for redirect.
+2026-01-11 19:50:48.393 +01:00 [INF] Login attempt for email: client@test.com
+2026-01-11 19:50:49.392 +01:00 [INF] User logged in successfully: "92a92897-62a3-4c81-b850-b2dc769a705d"
+2026-01-11 19:50:49.408 +01:00 [INF] HTTP POST /api/users/login responded 200 in 1132.9847 ms
+2026-01-11 19:50:49.481 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 19:50:49.493 +01:00 [INF] HTTP GET /api/devices responded 200 in 65.8228 ms
+2026-01-11 21:08:05.267 +01:00 [INF] TCP Server started on port 9000. Waiting for connections...
+2026-01-11 21:08:12.484 +01:00 [WRN] Failed to determine the https port for redirect.
+2026-01-11 21:08:12.677 +01:00 [INF] Login attempt for email: client@test.com
+2026-01-11 21:08:14.407 +01:00 [INF] User logged in successfully: "92a92897-62a3-4c81-b850-b2dc769a705d"
+2026-01-11 21:08:14.442 +01:00 [INF] HTTP POST /api/users/login responded 200 in 1981.2909 ms
+2026-01-11 21:08:14.602 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 21:08:14.619 +01:00 [INF] HTTP GET /api/devices responded 200 in 110.0998 ms
+2026-01-11 22:10:55.444 +01:00 [INF] TCP Server started on port 9000. Waiting for connections...
+2026-01-11 22:10:58.106 +01:00 [WRN] Failed to determine the https port for redirect.
+2026-01-11 22:10:58.367 +01:00 [INF] Login attempt for email: client@test.com
+2026-01-11 22:10:59.886 +01:00 [INF] User logged in successfully: "92a92897-62a3-4c81-b850-b2dc769a705d"
+2026-01-11 22:10:59.911 +01:00 [INF] HTTP POST /api/users/login responded 200 in 1827.7910 ms
+2026-01-11 22:11:00.008 +01:00 [INF] Retrieving the list of all devices from the database...
+2026-01-11 22:11:00.021 +01:00 [INF] HTTP GET /api/devices responded 200 in 70.5810 ms
