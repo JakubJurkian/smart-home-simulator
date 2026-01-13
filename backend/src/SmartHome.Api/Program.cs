@@ -71,6 +71,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddHostedService<TcpSmartHomeServer>();
+builder.Services.AddHostedService<MqttListenerService>();
 
 var app = builder.Build();
 

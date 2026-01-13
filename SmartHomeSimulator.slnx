@@ -4,6 +4,10 @@
         <Project Path="backend\src\SmartHome.Domain\SmartHome.Domain.csproj" />
         <Project Path="backend\src\SmartHome.Infrastructure\SmartHome.Infrastructure.csproj" />
     </Folder>
+    <Folder Name="/backend/" />
+    <Folder Name="/backend/src/">
+        <Project Path="backend/src/SmartHome.Simulator/SmartHome.Simulator.csproj" />
+    </Folder>
     <Folder Name="/items/">
         <File Path="docker-compose.yml" />
     </Folder>
