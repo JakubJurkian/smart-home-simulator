@@ -13,4 +13,9 @@ public class SignalRNotifier(IHubContext<SmartHomeHub> hubContext) : IDeviceNoti
         // Wysyłamy wiadomość "RefreshDevices" do WSZYSTKICH podłączonych klientów
         await _hubContext.Clients.All.SendAsync("RefreshDevices");
     }
+
+    public async Task PushTemperature(Guid deviceId, double temperature)
+    {
+        await _hubContext.Clients.All.SendAsync("ReceiveTemperature", deviceId, temperature);
+    }
 }

@@ -32,14 +32,14 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     {
         logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.Room);
 
-        
+
         try
         {
             var userId = GetCurrentUserId();
             var id = service.AddLightBulb(request.Name, request.Room, userId);
             logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
             return CreatedAtAction(nameof(GetDevices), new { id });
-            
+
         }
         catch (UnauthorizedAccessException) { return Unauthorized(); }
     }
@@ -145,5 +145,22 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
             return userId;
         }
         throw new UnauthorizedAccessException("User not logged in");
+    }
+
+    [HttpGet("all-system")] // /api/devices/all-system
+    public ActionResult<IEnumerable<DeviceDto>> GetAllSystemDevices()
+    {
+        // download all from server repository
+        var devices = service.GetAllServersSide();
+
+        var dtos = devices.Select(d => new DeviceDto(
+        d.Id,
+        d.Name,
+        d.Room,
+        d.GetType().Name,
+        (d as LightBulb)?.IsOn,
+        (d as TemperatureSensor)?.CurrentTemperature
+    ));
+        return Ok(dtos);
     }
 }

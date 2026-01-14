@@ -9,4 +9,5 @@ public interface IDeviceRepository
     void Add(Device device);
     void Update(Device device);
     void Delete(Guid id);
+    IEnumerable<Device> GetAllServersSide();
 }

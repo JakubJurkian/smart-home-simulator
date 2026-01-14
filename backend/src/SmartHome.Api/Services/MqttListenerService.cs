@@ -14,7 +14,7 @@ public class MqttListenerService(IServiceScopeFactory scopeFactory) : Background
     // Configuration like in simulator
     private const string BROKER_HOST = "test.mosquitto.org";
     private const int BROKER_PORT = 1883;
-    private const string TOPIC = "smarthome/device/livingroom/temp";
+    private const string TOPIC = "smarthome/devices/+/temp";
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -35,7 +35,7 @@ public class MqttListenerService(IServiceScopeFactory scopeFactory) : Background
         try
         {
             await _mqttClient.ConnectAsync(mqttOptions, stoppingToken);
-            
+
             var subscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder()
                 .WithTopicFilter(TOPIC)
                 .Build();
@@ -55,42 +55,32 @@ public class MqttListenerService(IServiceScopeFactory scopeFactory) : Background
 
     private async Task HandleMessageAsync(MqttApplicationMessageReceivedEventArgs e)
     {
-        var payload = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
-        Console.WriteLine($"📥 Backend received MQTT: {payload}");
-
-        // MAGIA INTEGRACJI
-        
-        // Musimy utworzyć "Scope", żeby dostać się do serwisów (SignalR, Baza Danych)
-        // wewnątrz serwisu działającego w tle.
-        using (var scope = _scopeFactory.CreateScope())
+        var topic = e.ApplicationMessage.Topic;
+        var segments = topic.Split('/'); // [0]smarthome, [1]devices, [2]GUID, [3]temp
+        if (segments.Length > 2 && Guid.TryParse(segments[2], out Guid deviceId))
         {
-            // Parsujemy JSON z symulatora
-            try 
+            using var scope = _scopeFactory.CreateScope();
+            var payload = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
+            var data = JsonSerializer.Deserialize<TemperatureData>(payload);
+
+            if (data != null)
             {
-                var data = JsonSerializer.Deserialize<TemperatureData>(payload);
-                
-                // Tutaj normalnie zapisalibyśmy to do bazy danych
-                // np. var deviceService = scope.ServiceProvider.GetRequiredService<IDeviceService>();
-                // deviceService.UpdateTemperature("LivingRoomSensor", data.Temperature);
-                // Ale na razie zrobimy skrót -> Od razu SignalR
-                
-                // Powiadamiamy Reacta przez SignalR
+                // Save in db
+                var deviceService = scope.ServiceProvider.GetRequiredService<IDeviceService>();
+                deviceService.UpdateTemperature(deviceId, data.temperature);
+
+                // send to react for live effect
                 var notifier = scope.ServiceProvider.GetRequiredService<IDeviceNotifier>();
-                await notifier.NotifyDeviceChanged(); 
-                
-                Console.WriteLine("⚡ SignalR notification sent!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ Error processing message: {ex.Message}");
+                await notifier.PushTemperature(deviceId, data.temperature);
+
+                Console.WriteLine($"✅ Processed {deviceId}: {data.temperature}");
             }
         }
     }
-}
 
-// Klasa pomocnicza do odczytu JSON-a
-public class TemperatureData
+    // Klasa pomocnicza do odczytu JSON-a
+    public class TemperatureData
 {
     public double temperature { get; set; }
-    public DateTime timestamp { get; set; }
+}
 }

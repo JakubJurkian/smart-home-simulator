@@ -1,20 +1,19 @@
-﻿using System.Text;
+﻿using System.Net.Http.Json;
 using System.Text.Json; // JSON to send structured data
 using MQTTnet;
 using MQTTnet.Client;
 
 // CONFIGURATION
+const string API_URL = "http://localhost:5187/api/devices/all-system";
 const string BROKER_HOST = "test.mosquitto.org"; // Public test broker
 const int BROKER_PORT = 1883;
-
-// Use a unique topic so we don't mix with other people testing!
-const string TOPIC = "smarthome/device/livingroom/temp"; 
 
 Console.WriteLine("--- IoT Device Simulator (Thermometer) ---");
 
 // Create a factory to generate clients
 var mqttFactory = new MqttFactory();
 using var mqttClient = mqttFactory.CreateMqttClient();
+using var httpClient = new HttpClient();
 
 // Configure connection options
 var mqttClientOptions = new MqttClientOptionsBuilder()
@@ -40,32 +39,39 @@ catch (Exception ex)
 var random = new Random();
 while (true)
 {
-    // Generate random temperature between 20.0 and 25.0
-    double temp = Math.Round(20.0 + (random.NextDouble() * 5.0), 2);
 
-    // Create a data object
-    var payloadObj = new
+    try
     {
-        temperature = temp,
-        timestamp = DateTime.UtcNow,
-        unit = "C"
-    };
+        // download all devices (without accessing userId)
+        var devices = await httpClient.GetFromJsonAsync<List<DeviceDto>>(API_URL);
 
-    // Serialize to JSON string
-    string payloadJson = JsonSerializer.Serialize(payloadObj);
+        if (devices != null)
+        {
+            var sensors = devices.Where(d => d.Type == "TemperatureSensor").ToList();
+            Console.WriteLine($"Found {sensors.Count} sensors globally.");
 
-    // Build the MQTT message
-    var message = new MqttApplicationMessageBuilder()
-        .WithTopic(TOPIC)
-        .WithPayload(payloadJson)
-        .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-        .Build();
+            foreach (var sensor in sensors)
+            {
+                // Wygeneruj dane
+                double temp = Math.Round(20.0 + (random.NextDouble() * 5.0), 2);
+                string json = JsonSerializer.Serialize(new { temperature = temp });
 
-    // Publish
-    await mqttClient.PublishAsync(message, CancellationToken.None);
-    
-    Console.WriteLine($"[Sent] Topic: {TOPIC} | Payload: {payloadJson}");
+                // send to unique channel: smarthome/devices/{GUID}/temp
+                string topic = $"smarthome/devices/{sensor.Id}/temp";
 
-    // Wait 5 seconds
-    await Task.Delay(5000);
+                await mqttClient.PublishAsync(new MqttApplicationMessageBuilder()
+                    .WithTopic(topic).WithPayload(json).Build());
+            }
+        }
+    }
+    catch (Exception ex) { Console.WriteLine($"⚠️ Error: {ex.Message}"); }
+
+    await Task.Delay(5000); // wait 5 sec
+}
+
+public class DeviceDto
+{
+    public Guid Id { get; set; }
+    public required string Name { get; set; }
+    public required string Type { get; set; }
 }

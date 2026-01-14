@@ -25,4 +25,9 @@ public class TemperatureSensor(string name, string room) : Device(name, room, "T
 
         return CurrentTemperature;
     }
+
+    public void SetTemperature(double temp)
+    {
+        CurrentTemperature = temp;
+    }
 }

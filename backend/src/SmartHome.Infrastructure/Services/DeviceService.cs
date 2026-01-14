@@ -79,4 +79,21 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
         _ = notifier.NotifyDeviceChanged();
         return true;
     }
+
+    public void UpdateTemperature(Guid id, double temp)
+    {
+        var device = repository.GetAllServersSide().FirstOrDefault(d => d.Id == id);
+
+        if (device is TemperatureSensor sensor)
+        {
+            sensor.SetTemperature(temp);
+            repository.Update(sensor);
+        }
+    }
+
+    public IEnumerable<Device> GetAllServersSide()
+    {
+        // Przekazujemy zapytanie do repozytorium
+        return repository.GetAllServersSide();
+    }
 }

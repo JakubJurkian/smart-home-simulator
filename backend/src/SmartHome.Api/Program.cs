@@ -93,6 +93,6 @@ app.UseHttpsRedirection(); // Redirect HTTP to HTTPS automatically
 app.UseAuthorization();
 app.MapControllers(); // Map endpoints from [ApiController] classes
 
-app.MapHub<SmartHomeHub>("/hubs/smarthome"); //endpoint for WebSockets
+app.MapHub<SmartHomeHub>("/smarthomehub"); //endpoint for WebSockets
 
 app.Run(); // Start the app
