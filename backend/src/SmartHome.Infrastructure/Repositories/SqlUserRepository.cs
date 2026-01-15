@@ -35,4 +35,10 @@ public class SqlUserRepository(SmartHomeDbContext context) : IUserRepository
         context.Users.Update(user);
         context.SaveChanges();
     }
+
+    public void Delete(User user)
+    {
+        context.Users.Remove(user);
+        context.SaveChanges();
+    }
 }

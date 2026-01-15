@@ -80,4 +80,10 @@ public class UserService(IUserRepository userRepository) : IUserService
         // Save changes
         userRepository.Update(user);
     }
+
+    public void DeleteUser(Guid id)
+    {
+        var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
+        userRepository.Delete(user);
+    }
 }
