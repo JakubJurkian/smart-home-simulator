@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 
 // --- CONFIG & TYPES ---
@@ -74,16 +74,24 @@ const AuthForm = ({
         alert("Registration successful! Please log in.");
         setIsLoginMode(true);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err.message === "Failed to fetch") {
+          setError("Unable to connect to the server. Try again later.");
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError("Something went wrong! Try again later.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
         <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">
           {isLoginMode ? "🔐 Log In" : "📝 Register"}
         </h2>
@@ -99,7 +107,7 @@ const AuthForm = ({
               placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="p-3 border rounded-lg"
+              className="p-3 border rounded-lg w-full"
               required
             />
           )}
@@ -108,7 +116,7 @@ const AuthForm = ({
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="p-3 border rounded-lg"
+            className="p-3 border rounded-lg w-full"
             required
           />
           <input
@@ -116,14 +124,16 @@ const AuthForm = ({
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="p-3 border rounded-lg"
+            className="p-3 border rounded-lg w-full"
             required
           />
           <button
             type="submit"
             disabled={isLoading}
-            className={`py-3 rounded-lg font-bold text-white transition-colors ${
-              isLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+            className={`py-3 rounded-lg font-bold text-white transition-colors w-full ${
+              isLoading
+                ? "cursor-not-allowed bg-blue-400"
+                : "cursor-pointer bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {isLoading
@@ -136,7 +146,12 @@ const AuthForm = ({
         <p className="text-center mt-6 text-sm text-gray-600">
           <button
             onClick={() => setIsLoginMode(!isLoginMode)}
-            className="text-blue-600 font-semibold hover:underline"
+            className={`${
+              isLoading
+                ? "cursor-not-allowed"
+                : "cursor-pointer hover:underline"
+            }  text-blue-600 font-semibold `}
+            disabled={isLoading ? true : false}
           >
             {isLoginMode ? "Register here" : "Log in here"}
           </button>
@@ -161,8 +176,8 @@ const ActionButton = ({
     "flex-1 py-2 rounded-md text-sm font-medium transition-colors";
   const activeClass =
     color === "green"
-      ? "bg-green-500 hover:bg-green-600 text-white shadow-sm"
-      : "bg-red-500 hover:bg-red-600 text-white shadow-sm";
+      ? "cursor-pointer bg-green-500 hover:bg-green-600 text-white shadow-sm"
+      : "cursor-pointer bg-red-500 hover:bg-red-600 text-white shadow-sm";
   const disabledClass =
     color === "green"
       ? "bg-green-200 text-green-800 cursor-not-allowed opacity-50"
@@ -192,12 +207,12 @@ const DeviceCard = ({ device, onDelete, onToggle, temp }: DeviceCardProps) => {
       className={`relative p-5 rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md ${bgClass}`}
     >
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-          {isBulb ? "💡" : "🌡️"} {device.name}
+        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 truncate pr-6">
+          {isBulb ? "💡" : "🌡️"} <span className="truncate">{device.name}</span>
         </h3>
         <button
           onClick={() => onDelete(device.id)}
-          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+          className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0"
           title="Delete"
         >
           <svg
@@ -216,7 +231,7 @@ const DeviceCard = ({ device, onDelete, onToggle, temp }: DeviceCardProps) => {
           </svg>
         </button>
       </div>
-      <p className="text-sm text-gray-500 mb-1">📍 {device.room}</p>
+      <p className="text-sm text-gray-500 mb-1 truncate">📍 {device.room}</p>
       <p className="text-xs text-gray-400 font-mono mb-4">
         ID: {device.id.slice(0, 8)}...
       </p>
@@ -280,26 +295,26 @@ const DeviceForm = ({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="flex-1 p-2 border border-gray-300 rounded-lg"
+          className="flex-1 p-2 border border-gray-300 rounded-lg w-full"
         />
         <input
           placeholder="Room"
           value={room}
           onChange={(e) => setRoom(e.target.value)}
           required
-          className="flex-1 p-2 border border-gray-300 rounded-lg"
+          className="flex-1 p-2 border border-gray-300 rounded-lg w-full"
         />
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="p-2 border border-gray-300 rounded-lg bg-white"
+          className="p-2 border border-gray-300 rounded-lg bg-white w-full sm:w-auto"
         >
           <option value="lightbulb">💡 Light Bulb</option>
           <option value="sensor">🌡️ Temp Sensor</option>
         </select>
         <button
           type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors w-full sm:w-auto"
         >
           Add
         </button>
@@ -322,8 +337,7 @@ function App() {
     setTimeout(() => setActionError(null), 3000);
   };
 
-  const fetchDevices = () => {
-    setGlobalError(null);
+  const fetchDevices = useCallback(() => {
     fetch(`${API_URL}/devices`, { credentials: "include" })
       .then((res) => {
         if (res.status === 401) {
@@ -335,6 +349,7 @@ function App() {
       })
       .then((data) => {
         setDevices(Array.isArray(data) ? data : []);
+        setGlobalError(null);
       })
       .catch((err) => {
         console.error("Fetch failed:", err);
@@ -344,11 +359,11 @@ function App() {
             : err.message
         );
       });
-  };
+  }, []);
 
   useEffect(() => {
     if (user) fetchDevices();
-  }, [user]);
+  }, [user, fetchDevices]);
 
   const handleLoginSuccess = (userData: User) => setUser(userData);
 
@@ -400,9 +415,6 @@ function App() {
     }
   };
 
-  // deleted handleCheckTemp - relevant
-
-  // --- SIGNALR ---
   useEffect(() => {
     if (!user) return;
 
@@ -425,18 +437,18 @@ function App() {
     return () => {
       connection.stop();
     };
-  }, [user]);
+  }, [user, fetchDevices]);
 
   if (!user) return <AuthForm onLoginSuccess={handleLoginSuccess} />;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-800 relative">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 font-sans text-gray-800 relative">
       {actionError && (
-        <div className="fixed bottom-6 right-6 bg-red-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-4 z-50 animate-bounce">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-auto bg-red-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center justify-between gap-4 z-50 animate-bounce">
           <span className="font-medium">{actionError}</span>
           <button
             onClick={() => setActionError(null)}
-            className="ml-4 hover:text-gray-200 font-bold"
+            className="ml-4 hover:text-gray-200 font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -444,16 +456,16 @@ function App() {
       )}
 
       <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 sm:gap-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 text-center sm:text-left">
             🏠 Smart Home{" "}
-            <span className="text-gray-400 text-lg ml-2 font-normal">
+            <span className="text-gray-400 text-lg ml-2 font-normal whitespace-nowrap">
               | {user.username}
             </span>
           </h1>
           <button
             onClick={handleLogout}
-            className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
           >
             🚪 Logout
           </button>
@@ -470,15 +482,6 @@ function App() {
         )}
 
         <DeviceForm onAdd={handleAdd} />
-
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={fetchDevices}
-            className="cursor-pointer text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg flex items-center gap-2"
-          >
-            🔄 Refresh List
-          </button>
-        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {devices.map((device) => (
