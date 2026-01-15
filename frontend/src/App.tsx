@@ -28,6 +28,182 @@ export interface DeviceCardProps {
 
 // --- COMPONENTS ---
 
+const UserProfile = ({
+  user,
+  onBack,
+  onUpdateUser,
+}: {
+  user: User;
+  onBack: () => void;
+  onUpdateUser: (updatedUser: User) => void;
+}) => {
+  const [username, setUsername] = useState(user.username);
+
+  // Password change states
+  const [isChangingPass, setIsChangingPass] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [msg, setMsg] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+
+    // Password validation
+    if (isChangingPass && newPassword !== confirmPassword) {
+      setMsg({ text: "Passwords do not match!", type: "error" });
+      return;
+    }
+
+    // Assuming endpoint PUT /api/users/{id}
+    try {
+      const body: { username: string; password?: string } = { username };
+      if (isChangingPass && newPassword) {
+        body.password = newPassword;
+      }
+
+      const res = await fetch(`${API_URL}/users/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to update profile.");
+
+      setMsg({ text: "Profile updated successfully!", type: "success" });
+
+      // Update state in main app
+      onUpdateUser({ ...user, username });
+
+      // Reset password form
+      setNewPassword("");
+      setConfirmPassword("");
+      setIsChangingPass(false);
+    } catch (err) {
+      console.log(err);
+      setMsg({ text: "Error updating profile.", type: "error" });
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-md border border-gray-200 mt-8">
+      <div className="flex items-center justify-between mb-6 border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-800">👤 User Profile</h2>
+        <button
+          onClick={onBack}
+          className="cursor-pointer text-gray-500 hover:text-gray-800 px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 transition text-sm"
+        >
+          ← Back to Dashboard
+        </button>
+      </div>
+
+      {msg && (
+        <div
+          className={`p-3 rounded mb-4 text-center ${
+            msg.type === "success"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {msg.text}
+        </div>
+      )}
+
+      <form onSubmit={handleUpdateProfile} className="space-y-6">
+        {/* EMAIL (Read Only) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-500 mb-1">
+            Email (read-only)
+          </label>
+          <input
+            type="email"
+            value={user.email}
+            disabled
+            className="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed"
+          />
+        </div>
+
+        {/* USERNAME */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Username
+          </label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        {/* PASSWORD SECTION */}
+        <div className="pt-4 border-t border-gray-100">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Password
+          </label>
+
+          {!isChangingPass ? (
+            <div className="flex gap-4 items-center">
+              <input
+                type="password"
+                value="********"
+                disabled
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => setIsChangingPass(true)}
+                className="whitespace-nowrap px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition cursor-pointer"
+              >
+                Change Password
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+              <input
+                type="password"
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white"
+              />
+              <input
+                type="password"
+                placeholder="Confirm New Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => setIsChangingPass(false)}
+                className="text-sm text-red-500 hover:underline cursor-pointer"
+              >
+                Cancel Password Change
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* SAVE BUTTON */}
+        <div className="pt-4">
+          <button
+            type="submit"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-transform active:scale-[0.99] cursor-pointer"
+          >
+            💾 Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 const AuthForm = ({
   onLoginSuccess,
 }: {
@@ -194,7 +370,7 @@ const ActionButton = ({
   );
 };
 
-// --- MODIFIED DEVICE CARD ---
+// --- DEVICE CARD ---
 const DeviceCard = ({ device, onDelete, onToggle, temp }: DeviceCardProps) => {
   const isBulb = device.type === "LightBulb";
   const isSensor = device.type === "TemperatureSensor";
@@ -332,6 +508,10 @@ function App() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
+  const [view, setView] = useState<"dashboard" | "profile">("dashboard");
+  const lightbulbs = devices.filter((d) => d.type === "LightBulb");
+  const sensors = devices.filter((d) => d.type === "TemperatureSensor");
+
   const showError = (message: string) => {
     setActionError(message);
     setTimeout(() => setActionError(null), 3000);
@@ -362,8 +542,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (user) fetchDevices();
-  }, [user, fetchDevices]);
+    if (user && view === "dashboard") fetchDevices();
+  }, [user, view, fetchDevices]);
 
   const handleLoginSuccess = (userData: User) => setUser(userData);
 
@@ -456,19 +636,38 @@ function App() {
       )}
 
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 sm:gap-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 sm:gap-0 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 flex items-center gap-2">
             🏠 Smart Home{" "}
-            <span className="text-gray-400 text-lg ml-2 font-normal whitespace-nowrap">
+            <span className="text-gray-400 text-lg font-normal">
               | {user.username}
             </span>
           </h1>
-          <button
-            onClick={handleLogout}
-            className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
-          >
-            🚪 Logout
-          </button>
+
+          <div className="flex gap-2 w-full sm:w-auto">
+            {view === "dashboard" ? (
+              <button
+                onClick={() => setView("profile")}
+                className="flex-1 sm:flex-none px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-medium transition cursor-pointer"
+              >
+                👤 Profile
+              </button>
+            ) : (
+              <button
+                onClick={() => setView("dashboard")}
+                className="flex-1 sm:flex-none px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg font-medium transition cursor-pointer"
+              >
+                🏠 Dashboard
+              </button>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition cursor-pointer"
+            >
+              🚪 Logout
+            </button>
+          </div>
         </div>
 
         {globalError && (
@@ -481,22 +680,71 @@ function App() {
           </div>
         )}
 
-        <DeviceForm onAdd={handleAdd} />
+        {view === "profile" ? (
+          <UserProfile
+            user={user}
+            onBack={() => setView("dashboard")}
+            onUpdateUser={setUser}
+          />
+        ) : (
+          <>
+            <DeviceForm onAdd={handleAdd} />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {devices.map((device) => (
-            <DeviceCard
-              key={device.id}
-              device={device}
-              onDelete={handleDelete}
-              onToggle={handleToggle}
-              temp={temps[device.id]}
-            />
-          ))}
-        </div>
+            {/* LIGHTING SECTION */}
+            {lightbulbs.length > 0 && (
+              <div className="mb-10 animate-fade-in-up">
+                <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2 border-b pb-2">
+                  💡 Lighting{" "}
+                  <span className="text-sm font-normal text-gray-400">
+                    ({lightbulbs.length})
+                  </span>
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {lightbulbs.map((device) => (
+                    <DeviceCard
+                      key={device.id}
+                      device={device}
+                      onDelete={handleDelete}
+                      onToggle={handleToggle}
+                      temp={temps[device.id]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {devices.length === 0 && !globalError && (
-          <p className="text-center text-gray-500 mt-10">No devices found.</p>
+            {/* SENSOR SECTION */}
+            {sensors.length > 0 && (
+              <div className="mb-10 animate-fade-in-up">
+                <h2 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2 border-b pb-2">
+                  🌡️ Temperature Sensors{" "}
+                  <span className="text-sm font-normal text-gray-400">
+                    ({sensors.length})
+                  </span>
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {sensors.map((device) => (
+                    <DeviceCard
+                      key={device.id}
+                      device={device}
+                      onDelete={handleDelete}
+                      onToggle={handleToggle}
+                      temp={temps[device.id]}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {devices.length === 0 && !globalError && (
+              <div className="text-center mt-10 p-10 bg-white rounded-xl border border-dashed border-gray-300">
+                <p className="text-gray-500 text-lg">No devices found.</p>
+                <p className="text-gray-400 text-sm">
+                  Use the form above to add your first device.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
