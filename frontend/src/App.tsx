@@ -10,7 +10,7 @@ export interface Device {
   room: string;
   type: string;
   isOn?: boolean;
-  lastTemperature?: number; 
+  currentTemperature?: number;
 }
 
 export interface User {
@@ -126,7 +126,11 @@ const AuthForm = ({
               isLoading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            {isLoading ? "Connecting..." : isLoginMode ? "Sign In" : "Create Account"}
+            {isLoading
+              ? "Connecting..."
+              : isLoginMode
+              ? "Sign In"
+              : "Create Account"}
           </button>
         </form>
         <p className="text-center mt-6 text-sm text-gray-600">
@@ -153,7 +157,8 @@ const ActionButton = ({
   disabled: boolean;
   color: "green" | "red";
 }) => {
-  const baseClass = "flex-1 py-2 rounded-md text-sm font-medium transition-colors";
+  const baseClass =
+    "flex-1 py-2 rounded-md text-sm font-medium transition-colors";
   const activeClass =
     color === "green"
       ? "bg-green-500 hover:bg-green-600 text-white shadow-sm"
@@ -164,19 +169,18 @@ const ActionButton = ({
       : "bg-red-200 text-red-800 cursor-not-allowed opacity-50";
 
   return (
-    <button onClick={onClick} disabled={disabled} className={`${baseClass} ${disabled ? disabledClass : activeClass}`}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseClass} ${disabled ? disabledClass : activeClass}`}
+    >
       {label}
     </button>
   );
 };
 
 // --- MODIFIED DEVICE CARD ---
-const DeviceCard = ({
-  device,
-  onDelete,
-  onToggle,
-  temp,
-}: DeviceCardProps) => {
+const DeviceCard = ({ device, onDelete, onToggle, temp }: DeviceCardProps) => {
   const isBulb = device.type === "LightBulb";
   const isSensor = device.type === "TemperatureSensor";
   const bgClass = device.isOn
@@ -184,7 +188,9 @@ const DeviceCard = ({
     : "bg-white border-gray-200";
 
   return (
-    <div className={`relative p-5 rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md ${bgClass}`}>
+    <div
+      className={`relative p-5 rounded-xl border shadow-sm transition-all duration-300 hover:shadow-md ${bgClass}`}
+    >
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           {isBulb ? "💡" : "🌡️"} {device.name}
@@ -194,26 +200,52 @@ const DeviceCard = ({
           className="text-gray-400 hover:text-red-500 transition-colors p-1"
           title="Delete"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
           </svg>
         </button>
       </div>
       <p className="text-sm text-gray-500 mb-1">📍 {device.room}</p>
-      <p className="text-xs text-gray-400 font-mono mb-4">ID: {device.id.slice(0, 8)}...</p>
+      <p className="text-xs text-gray-400 font-mono mb-4">
+        ID: {device.id.slice(0, 8)}...
+      </p>
 
       {isBulb && (
         <div className="flex gap-2 mt-4">
-          <ActionButton label="Turn On" onClick={() => onToggle(device.id, "turn-on")} disabled={!!device.isOn} color="green" />
-          <ActionButton label="Turn Off" onClick={() => onToggle(device.id, "turn-off")} disabled={!device.isOn} color="red" />
+          <ActionButton
+            label="Turn On"
+            onClick={() => onToggle(device.id, "turn-on")}
+            disabled={!!device.isOn}
+            color="green"
+          />
+          <ActionButton
+            label="Turn Off"
+            onClick={() => onToggle(device.id, "turn-off")}
+            disabled={!device.isOn}
+            color="red"
+          />
         </div>
       )}
 
       {isSensor && (
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">Temperature</span>
+          <span className="text-sm text-gray-500 font-medium uppercase tracking-wide">
+            Temperature
+          </span>
           <span className="text-3xl font-bold text-blue-600 tabular-nums">
-            {temp ?? device.lastTemperature ?? "--"} <span className="text-lg text-gray-400">°C</span>
+            {temp?.toFixed(1) ?? device.currentTemperature?.toFixed(1) ?? "--"}{" "}
+            <span className="text-lg text-gray-400">°C</span>
           </span>
         </div>
       )}
@@ -221,7 +253,11 @@ const DeviceCard = ({
   );
 };
 
-const DeviceForm = ({ onAdd }: { onAdd: (name: string, room: string, type: string) => void }) => {
+const DeviceForm = ({
+  onAdd,
+}: {
+  onAdd: (name: string, room: string, type: string) => void;
+}) => {
   const [name, setName] = useState("");
   const [room, setRoom] = useState("");
   const [type, setType] = useState("lightbulb");
@@ -235,15 +271,38 @@ const DeviceForm = ({ onAdd }: { onAdd: (name: string, room: string, type: strin
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
-      <h3 className="text-xl font-semibold mb-4 text-gray-700">➕ Add New Device</h3>
+      <h3 className="text-xl font-semibold mb-4 text-gray-700">
+        ➕ Add New Device
+      </h3>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required className="flex-1 p-2 border border-gray-300 rounded-lg" />
-        <input placeholder="Room" value={room} onChange={(e) => setRoom(e.target.value)} required className="flex-1 p-2 border border-gray-300 rounded-lg" />
-        <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border border-gray-300 rounded-lg bg-white">
+        <input
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="flex-1 p-2 border border-gray-300 rounded-lg"
+        />
+        <input
+          placeholder="Room"
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+          required
+          className="flex-1 p-2 border border-gray-300 rounded-lg"
+        />
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="p-2 border border-gray-300 rounded-lg bg-white"
+        >
           <option value="lightbulb">💡 Light Bulb</option>
           <option value="sensor">🌡️ Temp Sensor</option>
         </select>
-        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors">Add</button>
+        <button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors"
+        >
+          Add
+        </button>
       </form>
     </div>
   );
@@ -279,7 +338,11 @@ function App() {
       })
       .catch((err) => {
         console.error("Fetch failed:", err);
-        setGlobalError(err.message === "Failed to fetch" ? "🔌 Connection to server lost." : err.message);
+        setGlobalError(
+          err.message === "Failed to fetch"
+            ? "🔌 Connection to server lost."
+            : err.message
+        );
       });
   };
 
@@ -290,7 +353,10 @@ function App() {
   const handleLoginSuccess = (userData: User) => setUser(userData);
 
   const handleLogout = () => {
-    fetch(`${API_URL}/users/logout`, { method: "POST", credentials: "include" }).catch(console.error);
+    fetch(`${API_URL}/users/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(console.error);
     setUser(null);
     setDevices([]);
     setGlobalError(null);
@@ -298,7 +364,7 @@ function App() {
   };
 
   const handleAdd = (name: string, room: string, type: string) => {
-    fetch(`${API_URL}/devices`, {
+    fetch(`${API_URL}/devices/${type}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, room, type }),
@@ -352,7 +418,6 @@ function App() {
       .catch((err) => console.error("❌ SignalR Connection Error:", err));
 
     connection.on("RefreshDevices", () => fetchDevices());
-
     connection.on("ReceiveTemperature", (deviceId: string, newTemp: number) => {
       setTemps((prev) => ({ ...prev, [deviceId]: newTemp }));
     });
@@ -369,20 +434,36 @@ function App() {
       {actionError && (
         <div className="fixed bottom-6 right-6 bg-red-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-4 z-50 animate-bounce">
           <span className="font-medium">{actionError}</span>
-          <button onClick={() => setActionError(null)} className="ml-4 hover:text-gray-200 font-bold">✕</button>
+          <button
+            onClick={() => setActionError(null)}
+            className="ml-4 hover:text-gray-200 font-bold"
+          >
+            ✕
+          </button>
         </div>
       )}
 
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-blue-600">
-            🏠 Smart Home <span className="text-gray-400 text-lg ml-2 font-normal">| {user.username}</span>
+            🏠 Smart Home{" "}
+            <span className="text-gray-400 text-lg ml-2 font-normal">
+              | {user.username}
+            </span>
           </h1>
-          <button onClick={handleLogout} className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">🚪 Logout</button>
+          <button
+            onClick={handleLogout}
+            className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            🚪 Logout
+          </button>
         </div>
 
         {globalError && (
-          <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-6" role="alert">
+          <div
+            className="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-6"
+            role="alert"
+          >
             <p className="font-bold">System Warning</p>
             <p>{globalError}</p>
           </div>
@@ -391,7 +472,12 @@ function App() {
         <DeviceForm onAdd={handleAdd} />
 
         <div className="flex justify-end mb-4">
-          <button onClick={fetchDevices} className="cursor-pointer text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg flex items-center gap-2">🔄 Refresh List</button>
+          <button
+            onClick={fetchDevices}
+            className="cursor-pointer text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg flex items-center gap-2"
+          >
+            🔄 Refresh List
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -401,13 +487,14 @@ function App() {
               device={device}
               onDelete={handleDelete}
               onToggle={handleToggle}
-              // Nie przekazujemy już onCheckTemp
               temp={temps[device.id]}
             />
           ))}
         </div>
-        
-        {devices.length === 0 && !globalError && <p className="text-center text-gray-500 mt-10">No devices found.</p>}
+
+        {devices.length === 0 && !globalError && (
+          <p className="text-center text-gray-500 mt-10">No devices found.</p>
+        )}
       </div>
     </div>
   );

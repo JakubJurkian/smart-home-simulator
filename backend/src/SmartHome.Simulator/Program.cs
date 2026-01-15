@@ -53,7 +53,7 @@ while (true)
             foreach (var sensor in sensors)
             {
                 // Wygeneruj dane
-                double temp = Math.Round(20.0 + (random.NextDouble() * 5.0), 2);
+                double temp = Math.Round(20.0 + (random.NextDouble() * 3.0), 2);
                 string json = JsonSerializer.Serialize(new { temperature = temp });
 
                 // send to unique channel: smarthome/devices/{GUID}/temp
