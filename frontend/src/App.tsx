@@ -32,18 +32,17 @@ const UserProfile = ({
   user,
   onBack,
   onUpdateUser,
+  onDeleteAccount, // <--- NEW PROP
 }: {
   user: User;
   onBack: () => void;
   onUpdateUser: (updatedUser: User) => void;
+  onDeleteAccount: () => void; // <--- Definition
 }) => {
   const [username, setUsername] = useState(user.username);
-
-  // Password change states
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [msg, setMsg] = useState<{
     text: string;
     type: "success" | "error";
@@ -53,13 +52,11 @@ const UserProfile = ({
     e.preventDefault();
     setMsg(null);
 
-    // Password validation
     if (isChangingPass && newPassword !== confirmPassword) {
       setMsg({ text: "Passwords do not match!", type: "error" });
       return;
     }
 
-    // Assuming endpoint PUT /api/users/{id}
     try {
       const body: { username: string; password?: string } = { username };
       if (isChangingPass && newPassword) {
@@ -76,11 +73,7 @@ const UserProfile = ({
       if (!res.ok) throw new Error("Failed to update profile.");
 
       setMsg({ text: "Profile updated successfully!", type: "success" });
-
-      // Update state in main app
       onUpdateUser({ ...user, username });
-
-      // Reset password form
       setNewPassword("");
       setConfirmPassword("");
       setIsChangingPass(false);
@@ -90,13 +83,43 @@ const UserProfile = ({
     }
   };
 
+  // --- NEW: DELETE LOGIC ---
+  const handleDeleteAccount = async () => {
+    // 1. Confirmation Dialog
+    if (
+      !window.confirm(
+        "ARE YOU SURE? This action cannot be undone. All your devices and data will be lost permanently."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      // 2. Call API
+      const res = await fetch(`${API_URL}/users/${user.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete account.");
+
+      // 3. Logout / Cleanup on frontend
+      alert("Account deleted. Goodbye!");
+      onDeleteAccount(); // Trigger logout in parent
+    } catch (err) {
+      console.log(err);
+      alert("Error deleting account.");
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-md border border-gray-200 mt-8">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6 border-b pb-4">
         <h2 className="text-2xl font-bold text-gray-800">👤 User Profile</h2>
         <button
           onClick={onBack}
-          className="cursor-pointer text-gray-500 hover:text-gray-800 px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 transition text-sm"
+          className="text-gray-500 hover:text-gray-800 px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 transition text-sm"
         >
           ← Back to Dashboard
         </button>
@@ -114,8 +137,8 @@ const UserProfile = ({
         </div>
       )}
 
+      {/* Update Form */}
       <form onSubmit={handleUpdateProfile} className="space-y-6">
-        {/* EMAIL (Read Only) */}
         <div>
           <label className="block text-sm font-medium text-gray-500 mb-1">
             Email (read-only)
@@ -128,7 +151,6 @@ const UserProfile = ({
           />
         </div>
 
-        {/* USERNAME */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Username
@@ -141,12 +163,10 @@ const UserProfile = ({
           />
         </div>
 
-        {/* PASSWORD SECTION */}
         <div className="pt-4 border-t border-gray-100">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Password
           </label>
-
           {!isChangingPass ? (
             <div className="flex gap-4 items-center">
               <input
@@ -190,7 +210,6 @@ const UserProfile = ({
           )}
         </div>
 
-        {/* SAVE BUTTON */}
         <div className="pt-4">
           <button
             type="submit"
@@ -200,6 +219,23 @@ const UserProfile = ({
           </button>
         </div>
       </form>
+
+      {/* --- NEW: DANGER ZONE --- */}
+      <div className="mt-12 pt-6 border-t-2 border-red-100">
+        <h3 className="text-lg font-bold text-red-600 mb-2">Danger Zone</h3>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-red-800">
+            Once you delete your account, there is no going back. Please be
+            certain.
+          </p>
+          <button
+            onClick={handleDeleteAccount}
+            className="whitespace-nowrap px-4 py-2 bg-white border border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded-lg font-bold transition shadow-sm cursor-pointer"
+          >
+            🗑️ Delete Account
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -685,6 +721,7 @@ function App() {
             user={user}
             onBack={() => setView("dashboard")}
             onUpdateUser={setUser}
+            onDeleteAccount={handleLogout}
           />
         ) : (
           <>
