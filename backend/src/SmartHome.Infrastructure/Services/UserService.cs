@@ -62,4 +62,28 @@ public class UserService(IUserRepository userRepository) : IUserService
     {
         return userRepository.Search(phrase);
     }
+
+    public void UpdateUser(Guid id, string newUsername, string? newPassword)
+    {
+        var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
+
+        //  Update Username
+        user.Username = newUsername;
+
+        //  Update Password (ONLY if provided)
+        if (!string.IsNullOrEmpty(newPassword))
+        {
+            // Use BCrypt or your hashing logic here (same as in Register method)
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        }
+
+        // Save changes
+        userRepository.Update(user);
+    }
+
+    public void DeleteUser(Guid id)
+    {
+        var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
+        userRepository.Delete(user);
+    }
 }

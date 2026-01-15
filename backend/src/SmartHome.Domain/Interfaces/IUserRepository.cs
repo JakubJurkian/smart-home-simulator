@@ -8,4 +8,7 @@ public interface IUserRepository
     User? GetByEmail(string email);
     User? GetById(Guid id);
     IEnumerable<User> Search(string phrase); // Points for searching
+    void Update(User user);
+
+    void Delete(User user);
 }
