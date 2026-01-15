@@ -20,7 +20,7 @@ appsettings.Development.json
 
 # logs & database files
 logs/
-*.db
+*.db*
 
 # FRONTEND
 ## Dependencies
