@@ -27,8 +27,12 @@ public class SqlUserRepository(SmartHomeDbContext context) : IUserRepository
         if (string.IsNullOrWhiteSpace(phrase)) return context.Users.ToList();
 
         // We look by name or mail (WHERE ... LIKE ...)
-        return context.Users
-            .Where(u => u.Username.Contains(phrase) || u.Email.Contains(phrase))
-            .ToList();
+        return [.. context.Users.Where(u => u.Username.Contains(phrase) || u.Email.Contains(phrase))];
+    }
+
+    public void Update(User user)
+    {
+        context.Users.Update(user);
+        context.SaveChanges();
     }
 }

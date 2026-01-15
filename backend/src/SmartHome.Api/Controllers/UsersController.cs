@@ -57,10 +57,10 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
         // Zapisujemy ID użytkownika w ciastku "UserId"
         Response.Cookies.Append("userId", user.Id.ToString(), cookieOptions);
 
-        return Ok(new 
-        { 
-            id = user.Id, 
-            username = user.Username, 
+        return Ok(new
+        {
+            id = user.Id,
+            username = user.Username,
             email = user.Email,
             message = "Login successful!"
         });
@@ -73,5 +73,44 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
         // Remove Cookie
         Response.Cookies.Delete("userId");
         return Ok(new { message = "Logged out" });
+    }
+
+    [HttpPut("{id}")]
+    public IActionResult UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+    {
+        try
+        {
+            // Security Check: Ensure user is modifying their own account
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId != id)
+            {
+                logger.LogWarning("User {CurrentId} tried to modify account {TargetId}", currentUserId, id);
+                return Forbid(); // 403 Forbidden
+            }
+
+            _userService.UpdateUser(id, request.Username, request.Password);
+
+            logger.LogInformation("User {UserId} updated their profile.", id);
+            return Ok(new { message = "Profile updated successfully." });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating user {UserId}", id);
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
+            Guid.TryParse(userIdString, out var userId))
+        {
+            return userId;
+        }
+        throw new UnauthorizedAccessException("User not logged in");
     }
 }

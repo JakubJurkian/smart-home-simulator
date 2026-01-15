@@ -15,4 +15,6 @@ public interface IUserService
 
     // Search
     IEnumerable<User> SearchUsers(string phrase);
+
+    void UpdateUser(Guid id, string newUsername, string? newPassword);
 }
