@@ -10,4 +10,5 @@ public interface IDeviceRepository
     void Update(Device device);
     void Delete(Guid id);
     IEnumerable<Device> GetAllServersSide();
+    void DeleteAllByUserId(Guid userId);
 }

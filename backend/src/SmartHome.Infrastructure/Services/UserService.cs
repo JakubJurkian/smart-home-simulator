@@ -3,22 +3,22 @@ using SmartHome.Domain.Interfaces;
 
 namespace SmartHome.Infrastructure.Services;
 
-public class UserService(IUserRepository userRepository) : IUserService
+public class UserService(IUserRepository userRepository, IDeviceRepository _deviceRepository) : IUserService
 {
     public Guid Register(string username, string email, string password, string role = "User")
     {
-        // 1. Check if email already exists
+        // Check if email already exists
         var existingUser = userRepository.GetByEmail(email);
         if (existingUser != null)
         {
             throw new Exception("Email is already taken.");
         }
 
-        // 2. Hash the password (NEVER store plain text!)
+        // Hash the password (NEVER store plain text!)
         // BCrypt automatically generates a "salt", so two identical passwords will have different hashes.
         string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-        // 3. Create the user object
+        // Create the user object
         var user = new User
         {
             Username = username,
@@ -27,7 +27,7 @@ public class UserService(IUserRepository userRepository) : IUserService
             Role = role
         };
 
-        // 4. Save to the database
+        // Save to the database
         userRepository.Add(user);
         return user.Id;
     }
@@ -67,10 +67,10 @@ public class UserService(IUserRepository userRepository) : IUserService
     {
         var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
 
-        //  Update Username
+        // Update Username
         user.Username = newUsername;
 
-        //  Update Password (ONLY if provided)
+        // Update Password (ONLY if provided)
         if (!string.IsNullOrEmpty(newPassword))
         {
             // Use BCrypt or your hashing logic here (same as in Register method)
@@ -84,6 +84,11 @@ public class UserService(IUserRepository userRepository) : IUserService
     public void DeleteUser(Guid id)
     {
         var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
+
+        // remove all devices belonging to this user (cleanup)
+        _deviceRepository.DeleteAllByUserId(id);
+
+        // delete the user
         userRepository.Delete(user);
     }
 }

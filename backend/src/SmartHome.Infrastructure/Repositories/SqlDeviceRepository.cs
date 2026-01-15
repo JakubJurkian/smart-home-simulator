@@ -54,4 +54,17 @@ public class SqlDeviceRepository(SmartHomeDbContext context) : IDeviceRepository
     {
         return [.. context.Devices];
     }
+
+    public void DeleteAllByUserId(Guid userId)
+    {
+        var userDevices = context.Devices
+            .Where(d => d.UserId == userId)
+            .ToList();
+
+        if (userDevices.Count != 0)
+        {
+            context.Devices.RemoveRange(userDevices);
+            context.SaveChanges();
+        }
+    }
 }
