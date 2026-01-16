@@ -94,7 +94,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
         return BadRequest("Could not turn off device.");
     }
 
-    [HttpPost("sensor")]
+    [HttpPost("temperaturesensor")]
     public IActionResult AddSensor([FromBody] CreateSensorRequest request)
     {
         logger.LogInformation("Request to add Sensor: '{Name}'", request.Name);
