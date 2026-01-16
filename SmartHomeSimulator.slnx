@@ -11,4 +11,7 @@
     <Folder Name="/items/">
         <File Path="docker-compose.yml" />
     </Folder>
+    <Folder Name="/tests/">
+        <Project Path="tests/SmartHome.UnitTests/SmartHome.UnitTests.csproj" />
+    </Folder>
 </Solution>
