@@ -45,12 +45,6 @@ public class SqlDeviceRepository(SmartHomeDbContext context) : IDeviceRepository
             context.SaveChanges();
         }
     }
-
-    public void SetTemperature(Guid deviceId, double temperature)
-    {
-
-    }
-
     public IEnumerable<Device> GetAllServersSide()
     {
         return [.. context.Devices];

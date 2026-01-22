@@ -27,21 +27,29 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 
     }
 
-    [HttpPost("lightbulb")] // api/devices/lightbulb
-    public IActionResult AddLightBulb([FromBody] CreateLightBulbRequest request)
+    [HttpPost] // api/devices
+    public IActionResult AddDevice([FromBody] CreateDeviceRequest request)
     {
-        logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.RoomId);
+        logger.LogInformation("Request to add device: '{Name}' (Type: {Type}) in Room: {Room}",
+            request.Name, request.Type, request.RoomId);
 
 
         try
         {
             var userId = GetCurrentUserId();
-            var id = service.AddLightBulb(request.Name, request.RoomId, userId);
-            logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
-            return CreatedAtAction(nameof(GetDevices), new { id });
-
+            var id = service.AddDevice(request.Name, request.RoomId, request.Type, userId);
+            logger.LogInformation("Successfully created {Type} with ID: {DeviceId}", request.Type, id);
+            return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
         }
-        catch (UnauthorizedAccessException) { return Unauthorized(); }
+        catch (ArgumentException ex)
+        {
+            logger.LogWarning("Failed to create device: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     [HttpGet("{id}")] // api/devices/[guid]
@@ -92,17 +100,6 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 
         logger.LogWarning("Failed to turn off device {DeviceId}", id);
         return BadRequest("Could not turn off device.");
-    }
-
-    [HttpPost("temperaturesensor")]
-    public IActionResult AddSensor([FromBody] CreateSensorRequest request)
-    {
-        logger.LogInformation("Request to add Sensor: '{Name}'", request.Name);
-        var userId = GetCurrentUserId();
-        var id = service.AddTemperatureSensor(request.Name, request.RoomId, userId);
-
-        logger.LogInformation("Created Sensor with ID: {DeviceId}", id);
-        return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
     }
 
     [HttpGet("{id}/temperature")]

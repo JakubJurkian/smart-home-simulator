@@ -15,12 +15,31 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
         return repository.Get(id, userId);
     }
 
-    public Guid AddLightBulb(string name, Guid roomId, Guid userId)
+    public Guid AddDevice(string name, Guid roomId, string type, Guid userId)
     {
-        var bulb = new LightBulb(name, roomId) { UserId = userId };
-        repository.Add(bulb);
-        _ = notifier.NotifyDeviceChanged();
-        return bulb.Id;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Device name cannot be empty.");
+        }
+
+        Device newDevice;
+
+        switch (type.ToLower())
+        {
+            case "lightbulb":
+                newDevice = new LightBulb(name, roomId);
+                break;
+            case "temperaturesensor":
+                newDevice = new TemperatureSensor(name, roomId);
+                break;
+            default:
+                throw new ArgumentException($"Unknown device type: {type}");
+        }
+
+        repository.Add(newDevice);
+
+        notifier.NotifyDeviceChanged();
+        return newDevice.Id;
     }
 
     public Guid AddTemperatureSensor(string name, Guid roomId, Guid userId)
