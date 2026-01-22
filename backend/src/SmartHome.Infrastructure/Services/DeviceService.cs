@@ -36,6 +36,7 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
                 throw new ArgumentException($"Unknown device type: {type}");
         }
 
+        newDevice.UserId = userId;
         repository.Add(newDevice);
 
         notifier.NotifyDeviceChanged();

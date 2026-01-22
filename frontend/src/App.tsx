@@ -60,7 +60,7 @@ function App() {
         setGlobalError(
           err.message === "Failed to fetch"
             ? "🔌 Connection to server lost."
-            : err.message
+            : err.message,
         );
       });
   }, []);
@@ -122,7 +122,7 @@ function App() {
 
   const handleAddDevice = (name: string, roomId: string, type: string) => {
     api.devices
-      .add(type, { name, roomId })
+      .add({ name, roomId, type })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to add device.");
         fetchDevices();
@@ -181,7 +181,7 @@ function App() {
   const handleDeleteRoom = (id: string) => {
     if (
       !confirm(
-        "⚠️ WARNING: Deleting this room will also DELETE ALL DEVICES inside it.\n\nAre you sure?"
+        "⚠️ WARNING: Deleting this room will also DELETE ALL DEVICES inside it.\n\nAre you sure?",
       )
     )
       return;
