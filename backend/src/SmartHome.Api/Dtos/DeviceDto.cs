@@ -6,5 +6,5 @@ public record DeviceDto(
     Guid RoomId,
     string Type,
     bool? IsOn,
-    double? LastTemperature
+    double? CurrentTemperature
 );

@@ -1,6 +1,5 @@
 using FluentAssertions; // allows to write english-like code
 using Moq; // creates repositories mocks (objects) to not connect with real db
-using Xunit; // engine which run tests
 
 using SmartHome.Domain.Entities;
 using SmartHome.Domain.Interfaces;

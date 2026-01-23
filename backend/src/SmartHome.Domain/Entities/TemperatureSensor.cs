@@ -5,24 +5,11 @@ public class TemperatureSensor(string name, Guid roomId) : Device(name, roomId, 
     public double CurrentTemperature { get; private set; } = 21.0;
 
     /// <summary>
-    /// Symuluje pobranie danych z czujnika sprzętowego.
-    /// W prawdziwym świecie tutaj byłby kod łączący się z fizycznym urządzeniem.
+    /// Simulates downloading data from a sensor.
+    /// In real world here would be code which connect with a physical device.
     /// </summary>
     public double GetReading()
     {
-        // Używamy generatora losowości
-        var random = new Random();
-
-        // Symulacja wahań temperatury
-        // Generujemy liczbę od -0.5 do +0.5
-        double fluctuation = (random.NextDouble() * 1.0) - 0.5;
-
-        // Aktualizujemy temperaturę (zmienia się powoli, nie skacze z 20 na 50)
-        CurrentTemperature += fluctuation;
-
-        // Zaokrąglamy do 1 miejsca po przecinku (np. 21.3)
-        CurrentTemperature = Math.Round(CurrentTemperature, 1);
-
         return CurrentTemperature;
     }
 
