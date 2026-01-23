@@ -59,31 +59,41 @@ public class DeviceServiceTests
         _deviceNotifierMock.Verify(n => n.NotifyDeviceChanged(), Times.Once);
     }
 
-    // business logic (toggle)
-    [Fact]
-    public void ToggleDevice_ShouldFlipState_AndNotify()
+    // business logic (toggle lamp light)
+    [Theory]
+    [InlineData(false, true)] // turn off -> turn on
+    [InlineData(true, false)] // turn on > turn off
+    public void ToggleDevice_ShouldFlipState_AndNotify(bool initialIsOn, bool wantTurnOn)
     {
         // Arrange
         var deviceId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        var bulb = new LightBulb("Lamp", Guid.NewGuid());
+        var bulb = new LightBulb("Lamp", Guid.NewGuid())
+        {
+            Id = deviceId,
+            UserId = userId,
+        };
 
-        // Teach mock to return 'bulb' obj defined above
+        if (initialIsOn) bulb.TurnOn();
+        else bulb.TurnOff();
+
         _deviceRepoMock.Setup(repo => repo.Get(deviceId, userId)).Returns(bulb);
 
         // Act
-        _deviceService.TurnOn(deviceId, userId);
-
+        if (wantTurnOn)
+        {
+            _deviceService.TurnOn(deviceId, userId);
+        }
+        else
+        {
+            _deviceService.TurnOff(deviceId, userId);
+        }
 
         // Assert
-        // is object's state changed?
-        bulb.IsOn.Should().BeTrue();
+        bulb.IsOn.Should().Be(wantTurnOn);
 
-        // is changed saved in db?
         _deviceRepoMock.Verify(repo => repo.Update(bulb), Times.Once);
-
-        // is SignalR notify sent?
         _deviceNotifierMock.Verify(n => n.NotifyDeviceChanged(), Times.Once);
     }
 
@@ -193,5 +203,45 @@ public class DeviceServiceTests
         var result = _deviceService.GetTemperature(deviceId, userId);
 
         result.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAllServersSide_ShouldReturnAllDevices_RegardlessOfUser()
+    {
+        // Arrange
+        var list = new List<Device>
+        {
+            new LightBulb("Lamp1", Guid.NewGuid()),
+            new TemperatureSensor("Sensor1", Guid.NewGuid())
+        };
+
+        _deviceRepoMock.Setup(r => r.GetAllServersSide()).Returns(list);
+
+        // Act
+        var result = _deviceService.GetAllServersSide();
+
+        // Assert
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void UpdateTemperature_ShouldCallRepo_WhenDeviceIsSensor()
+    {
+        // Arrange
+        var deviceId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var sensor = new TemperatureSensor("T1", Guid.NewGuid()) { Id = deviceId };
+
+        double newTemp = 24.5;
+
+        _deviceRepoMock.Setup(r => r.GetAllServersSide())
+                       .Returns([sensor]);
+
+        // Act
+        _deviceService.UpdateTemperature(deviceId, newTemp);
+
+        // Assert
+        sensor.CurrentTemperature.Should().Be(newTemp);
+        _deviceRepoMock.Verify(r => r.Update(sensor), Times.Once);
     }
 }

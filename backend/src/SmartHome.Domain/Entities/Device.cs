@@ -7,7 +7,7 @@ namespace SmartHome.Domain.Entities;
 public abstract class Device(string name, Guid roomId, string type)
 {
     // Globally Unique Id
-    public Guid Id { get; private set; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
     public string Name { get; private set; } = name;
     public Guid RoomId { get; set; } = roomId;// foreign key
     public Room? Room { get; set; }  // Navigation Property (for Entity Framework)
