@@ -215,10 +215,10 @@ var assemblies = [
     "classes": [
       { "name": "SmartHome.Domain.Entities.Device", "rp": "SmartHome.Domain_Device.html", "cl": 6, "ucl": 1, "cal": 7, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "SmartHome.Domain.Entities.LightBulb", "rp": "SmartHome.Domain_LightBulb.html", "cl": 5, "ucl": 3, "cal": 8, "tl": 14, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "SmartHome.Domain.Entities.MaintenanceLog", "rp": "SmartHome.Domain_MaintenanceLog.html", "cl": 0, "ucl": 5, "cal": 5, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "SmartHome.Domain.Entities.MaintenanceLog", "rp": "SmartHome.Domain_MaintenanceLog.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "SmartHome.Domain.Entities.Room", "rp": "SmartHome.Domain_Room.html", "cl": 7, "ucl": 2, "cal": 9, "tl": 16, "cb": 1, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "SmartHome.Domain.Entities.TemperatureSensor", "rp": "SmartHome.Domain_TemperatureSensor.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 20, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "SmartHome.Domain.Entities.User", "rp": "SmartHome.Domain_User.html", "cl": 0, "ucl": 6, "cal": 6, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "SmartHome.Domain.Entities.User", "rp": "SmartHome.Domain_User.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
   {
     "name": "SmartHome.Infrastructure",
@@ -231,9 +231,9 @@ var assemblies = [
       { "name": "SmartHome.Infrastructure.Repositories.SqlDeviceRepository", "rp": "SmartHome.Infrastructure_SqlDeviceRepository.html", "cl": 0, "ucl": 44, "cal": 44, "tl": 75, "cb": 0, "tb": 6, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "SmartHome.Infrastructure.Repositories.SqlUserRepository", "rp": "SmartHome.Infrastructure_SqlUserRepository.html", "cl": 0, "ucl": 23, "cal": 23, "tl": 44, "cb": 0, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "SmartHome.Infrastructure.Services.DeviceService", "rp": "SmartHome.Infrastructure_DeviceService.html", "cl": 45, "ucl": 28, "cal": 73, "tl": 119, "cb": 11, "tb": 16, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "SmartHome.Infrastructure.Services.MaintenanceLogService", "rp": "SmartHome.Infrastructure_MaintenanceLogService.html", "cl": 0, "ucl": 31, "cal": 31, "tl": 50, "cb": 0, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "SmartHome.Infrastructure.Services.MaintenanceLogService", "rp": "SmartHome.Infrastructure_MaintenanceLogService.html", "cl": 31, "ucl": 0, "cal": 31, "tl": 50, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "SmartHome.Infrastructure.Services.RoomService", "rp": "SmartHome.Infrastructure_RoomService.html", "cl": 17, "ucl": 0, "cal": 17, "tl": 30, "cb": 1, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "SmartHome.Infrastructure.Services.UserService", "rp": "SmartHome.Infrastructure_UserService.html", "cl": 0, "ucl": 48, "cal": 48, "tl": 94, "cb": 0, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "SmartHome.Infrastructure.Services.UserService", "rp": "SmartHome.Infrastructure_UserService.html", "cl": 42, "ucl": 6, "cal": 48, "tl": 94, "cb": 12, "tb": 12, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
