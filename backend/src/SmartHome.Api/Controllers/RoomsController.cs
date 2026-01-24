@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SmartHome.Api.Dtos;
 using SmartHome.Domain.Interfaces;
 
 namespace SmartHome.Api.Controllers;
@@ -15,10 +16,10 @@ public class RoomsController(IRoomService roomService) : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult AddRoom([FromBody] string name)
+    public IActionResult AddRoom([FromBody] CreateRoomRequest request)
     {
         var userId = GetCurrentUserId();
-        roomService.AddRoom(userId, name);
+        roomService.AddRoom(userId, request.Name);
         return Ok();
     }
 

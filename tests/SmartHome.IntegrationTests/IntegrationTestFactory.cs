@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SmartHome.Infrastructure.Persistence;
+using Microsoft.Extensions.Hosting;
+
 
 namespace SmartHome.IntegrationTests;
 
@@ -22,6 +24,8 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
             services.RemoveAll(typeof(DbContextOptions));
             services.RemoveAll(typeof(SmartHomeDbContext));
             services.RemoveAll(typeof(DbConnection));
+
+            services.RemoveAll(typeof(IHostedService));
 
             _connection = new SqliteConnection("DataSource=:memory:");
             _connection.Open();

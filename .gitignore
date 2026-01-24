@@ -54,3 +54,14 @@ mosquitto/log/*
 # OS GENERATED FILES
 .DS_Store
 Thumbs.db
+
+# TESTING & COVERAGE REPORTS
+TestResults/
+**/TestResults/
+*.trx
+*.cobertura.xml
+coverage.cobertura.xml
+
+# ReportGenerator output folder
+coveragereport/
+**/coveragereport/

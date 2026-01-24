@@ -12,7 +12,7 @@
         <File Path="docker-compose.yml" />
     </Folder>
     <Folder Name="/tests/">
+        <Project Path="tests/SmartHome.IntegrationTests/SmartHome.IntegrationTests.csproj" />
         <Project Path="tests/SmartHome.UnitTests/SmartHome.UnitTests.csproj" />
     </Folder>
-    <Project Path="SmartHome.IntegrationTests/SmartHome.IntegrationTests.csproj" />
 </Solution>
