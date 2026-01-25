@@ -45,7 +45,7 @@ jobs:
       - name: Start API for Performance Tests
         run: |
           # Start API in background, redirect output to api.log to prevent freezing and enable debugging
-          nohup dotnet run --project src/SmartHome.Api/SmartHome.Api.csproj --configuration Release --urls "http://localhost:5187" > api.log 2>&1 &
+          nohup dotnet run --project backend/src/SmartHome.Api/SmartHome.Api.csproj --configuration Release --urls "http://localhost:5187" > api.log 2>&1 &
           
           echo "Waiting for API to start..."
           
