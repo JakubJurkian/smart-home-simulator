@@ -1,0 +1,46 @@
+name: .NET CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # download code from repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # install .NET SDK 10
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Download restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Build project
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      # Run Unit Tests
+      - name: Run Unit Tests
+        run: dotnet test tests/SmartHome.UnitTests/SmartHome.UnitTests.csproj --no-build --configuration Release --verbosity normal
+
+      # Run Integration Tests
+      - name: Run Integration Tests
+        run: dotnet test tests/SmartHome.IntegrationTests/SmartHome.IntegrationTests.csproj --no-build --configuration Release --verbosity normal
+
+      # Run BDD Tests (Reqnroll)
+      - name: Run BDD Tests
+        run: dotnet test tests/SmartHome.BDDTests/SmartHome.BDDTests.csproj --no-build --configuration Release --verbosity normal
+
+      # Run Performance Test (NBomber) like console app (dotnet run)
+      - name: Run Performance Tests
+        run: dotnet run --project tests/SmartHome.PerformanceTests/SmartHome.PerformanceTests.csproj --configuration Release

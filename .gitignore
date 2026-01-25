@@ -1,26 +1,27 @@
 sciaga.txt
 
-# BACKEND
-## Build results
+# BACKEND & BUILD
 [Bb]in/
 [Oo]bj/
+dist/
 
-## User-specific settings (Visual Studio)
+# User-specific settings (Visual Studio & IDE)
 .vs/
 *.user
 *.userosscache
 *.suo
-
-## VS Code directories
+*.sln.iml
 .vscode/
 
-## Environment config (Secrets protection)
+# Environment config (Secrets protection)
 appsettings.Local.json
 appsettings.Development.json
 
-# logs & database files
+# LOGS & DATABASE
 logs/
+*.log
 *.db*
+*.sqlite
 
 # FRONTEND
 ## Dependencies
@@ -36,6 +37,7 @@ frontend/build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
 
 ## Logs
 npm-debug.log*
@@ -65,3 +67,8 @@ coverage.cobertura.xml
 # ReportGenerator output folder
 coveragereport/
 **/coveragereport/
+
+# PERFORMANCE REPORTS (NBomber)
+reports/
+nbomber_report_*
+nbomber-log-*.txt
