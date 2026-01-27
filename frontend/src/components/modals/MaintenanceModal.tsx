@@ -43,8 +43,8 @@ const MaintenanceModal = ({
 
         setLogs(
           logs.map((log) =>
-            log.id === editingId ? { ...log, title, description: desc } : log
-          )
+            log.id === editingId ? { ...log, title, description: desc } : log,
+          ),
         );
         setEditingId(null);
       } else {

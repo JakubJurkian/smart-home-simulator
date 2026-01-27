@@ -200,7 +200,7 @@ function App() {
   if (!user) return <AuthForm onLoginSuccess={handleLoginSuccess} />;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 font-sans text-gray-800 relative">
+    <div className="min-h-screen min-w-[320px] bg-gray-50 p-4 sm:p-8 font-sans text-gray-800 relative">
       {/* ERROR TOAST */}
       {actionError && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-auto bg-red-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center justify-between gap-4 z-50 animate-bounce">
@@ -215,16 +215,15 @@ function App() {
       )}
 
       <div className="max-w-5xl mx-auto">
-        {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 sm:gap-0 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 flex items-center gap-2 flex-col sm:flex-row">
             🏠 Smart Home{" "}
             <span className="text-gray-400 text-lg font-normal">
               | {user.username}
             </span>
           </h1>
 
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 w-full sm:w-auto justify-center">
             <button
               onClick={() =>
                 setView(view === "dashboard" ? "profile" : "dashboard")

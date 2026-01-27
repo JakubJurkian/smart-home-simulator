@@ -104,14 +104,19 @@ const DeviceCard = ({
               </button>
             </div>
           ) : (
-            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 truncate group">
-              <span>{isBulb ? "💡" : "🌡️"}</span>
-              <span className="truncate" title={device.name}>
+            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2 group">
+              <span className="shrink-0 text-xl">{isBulb ? "💡" : "🌡️"}</span>
+
+              <span
+                className="flex-1 min-w-0 break-all leading-tight cursor-default"
+                title={device.name}
+              >
                 {device.name}
               </span>
+
               <button
                 onClick={() => setIsEditing(true)}
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 transition-opacity p-1 text-sm cursor-pointer"
+                className="shrink-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 transition-opacity p-1 text-sm cursor-pointer"
                 title="Rename"
               >
                 ✏️
