@@ -163,4 +163,19 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     ));
         return Ok(dtos);
     }
+
+    [HttpPut("{id}")]
+    public IActionResult RenameDevice(Guid id, [FromBody] RenameDeviceRequest request)
+    {
+        var userId = GetCurrentUserId();
+        var success = service.RenameDevice(id, request.NewName, userId);
+
+        if (success)
+        {
+            return Ok(new { message = "Device name changed." });
+        }
+
+        logger.LogWarning("Could not change device name.");
+        return BadRequest("Could not change device name.");
+    }
 }
