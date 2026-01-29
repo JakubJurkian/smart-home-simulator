@@ -3,7 +3,6 @@ using Moq;
 using SmartHome.Domain.Entities;
 using SmartHome.Domain.Interfaces;
 using SmartHome.Infrastructure.Services;
-using Xunit;
 
 namespace SmartHome.UnitTests.Services;
 

@@ -14,7 +14,7 @@ var loginContent = new StringContent(
     Encoding.UTF8,
     "application/json");
 
-// Register first (just in case DB is empty)
+// Register first
 try {
     await httpClient.PostAsync($"{baseHtmlUrl}/api/users/register", 
         new StringContent(JsonSerializer.Serialize(new { Username = "Admin", Email = "admin@test.com", Password = "Pass123!" }), Encoding.UTF8, "application/json"));

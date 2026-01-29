@@ -20,12 +20,12 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll(typeof(DbContextOptions<SmartHomeDbContext>));
-            services.RemoveAll(typeof(DbContextOptions));
-            services.RemoveAll(typeof(SmartHomeDbContext));
-            services.RemoveAll(typeof(DbConnection));
+            services.RemoveAll<DbContextOptions<SmartHomeDbContext>>();
+            services.RemoveAll<DbContextOptions>();
+            services.RemoveAll<SmartHomeDbContext>();
+            services.RemoveAll<DbConnection>();
 
-            services.RemoveAll(typeof(IHostedService));
+            services.RemoveAll<IHostedService>();
 
             _connection = new SqliteConnection("DataSource=:memory:");
             _connection.Open();

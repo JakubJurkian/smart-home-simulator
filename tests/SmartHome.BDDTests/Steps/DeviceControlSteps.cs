@@ -1,5 +1,4 @@
-﻿using System.Net;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using FluentAssertions;
 using Reqnroll;
 using SmartHome.Api.Dtos;
