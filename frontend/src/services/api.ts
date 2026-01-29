@@ -1,5 +1,10 @@
 import { API_URL } from "../config";
-import type { AddDeviceRequest, LoginRequest, RegisterRequest, User } from "../types";
+import type {
+  AddDeviceRequest,
+  LoginRequest,
+  RegisterRequest,
+  User,
+} from "../types";
 // --- HELPERS ---
 
 const getOptions = (method: string, body?: unknown): RequestInit => {
@@ -17,12 +22,11 @@ const getOptions = (method: string, body?: unknown): RequestInit => {
   return options;
 };
 
-
 // generic request fn
 const request = (
   endpoint: string,
   method: string = "GET",
-  body?: unknown
+  body?: unknown,
 ): Promise<Response> => {
   return fetch(`${API_URL}${endpoint}`, getOptions(method, body));
 };
@@ -52,7 +56,7 @@ export const api = {
     toggle: (id: string, action: "turn-on" | "turn-off") =>
       request(`/devices/${id}/${action}`, "PUT"),
     rename: (id: string, newName: string) =>
-      request(`/devices/${id}/name`, "PATCH", newName),
+      request(`/devices/${id}`, "PUT", { newName }),
   },
 
   rooms: {

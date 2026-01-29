@@ -1,0 +1,1 @@
+public record RenameDeviceRequest(string NewName);

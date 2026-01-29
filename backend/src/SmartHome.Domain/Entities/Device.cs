@@ -14,4 +14,11 @@ public abstract class Device(string name, Guid roomId, string type)
     public string Type { get; protected set; } = type;
 
     public Guid UserId { get; set; }
+
+    public void Rename(string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+            throw new ArgumentException("Name cannot be empty");
+        Name = newName;
+    }
 }
