@@ -179,6 +179,109 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
 
     #endregion
 
+    #region Rename Device (PUT /api/devices/{id})
+
+    [Fact]
+    public async Task RenameDevice_ShouldReturnOk_WhenInputIsValid()
+    {
+        // 1. Arrange
+        await RegisterAndLoginAsync("rename-success");
+        var roomId = await CreateRoomAsync("Rename Room");
+        var deviceIdString = await CreateDeviceAsync("Old Name", "LightBulb", roomId);
+        var deviceId = Guid.Parse(deviceIdString);
+
+        var newName = "Kitchen Light Updated";
+
+        // 2. Act
+        // Wysyłamy string jako JSON (z cudzysłowami), bo kontroler oczekuje [FromBody] string
+        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", newName);
+
+        // 3. Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Dodatkowe sprawdzenie: Pobieramy urządzenie, by upewnić się, że nazwa w bazie się zmieniła
+        var getResponse = await _client.GetFromJsonAsync<TestDeviceDto>($"{DevicesBase}/{deviceId}");
+        getResponse.Should().NotBeNull();
+        getResponse!.Name.Should().Be(newName);
+    }
+
+    [Fact]
+    public async Task RenameDevice_ShouldReturnBadRequest_WhenNameIsEmpty()
+    {
+        // Pokrywa: catch (ArgumentException ex) -> BadRequest
+        // Logika w encji Device: if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException...
+
+        // 1. Arrange
+        await RegisterAndLoginAsync("rename-empty");
+        var roomId = await CreateRoomAsync("Empty Name Room");
+        var deviceId = await CreateDeviceAsync("Valid Name", "LightBulb", roomId);
+
+        // 2. Act
+        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", "   "); // Pusty string/spacje
+
+        // 3. Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        
+        var content = await response.Content.ReadAsStringAsync();
+        content.Should().Contain("Device name cannot be empty");
+    }
+
+    [Fact]
+    public async Task RenameDevice_ShouldReturnNotFound_WhenDeviceDoesNotExist()
+    {
+        // Pokrywa: if (!success) -> return NotFound();
+        // Service zwraca false, gdy repozytorium zwróci null
+
+        // 1. Arrange
+        await RegisterAndLoginAsync("rename-404");
+        var randomId = Guid.NewGuid();
+
+        // 2. Act
+        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{randomId}", "New Name");
+
+        // 3. Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task RenameDevice_ShouldReturnNotFound_WhenDeviceBelongsToAnotherUser()
+    {
+        // Pokrywa: bezpieczeństwo danych. Użytkownik A nie może zmienić nazwy urządzenia Użytkownika B.
+        // Service.Get(id, userId) zwróci null, więc success = false -> NotFound
+
+        // 1. Arrange - User A tworzy urządzenie
+        await RegisterAndLoginAsync("user-owner");
+        var roomId = await CreateRoomAsync("User A Room");
+        var deviceId = await CreateDeviceAsync("User A Device", "LightBulb", roomId);
+
+        // 2. Arrange - Logujemy się jako User B (Hacker)
+        await RegisterAndLoginAsync("user-hacker");
+
+        // 3. Act - User B próbuje zmienić nazwę urządzenia Usera A
+        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", "Hacked Name");
+
+        // 4. Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task RenameDevice_ShouldReturnUnauthorized_WhenNotLoggedIn()
+    {
+        // Pokrywa: catch (UnauthorizedAccessException) -> Unauthorized
+        
+        // 1. Arrange
+        // NIE logujemy się (brak ciasteczka)
+        var deviceId = Guid.NewGuid();
+
+        // 2. Act
+        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", "New Name");
+
+        // 3. Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
     #region Helpers
 
     private async Task RegisterAndLoginAsync(string prefix)
@@ -257,3 +360,4 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
 internal record TestIdDto(Guid Id);
 internal record TestDeviceDto(string Id, string Name, Guid RoomId, string Type, bool? IsOn, double? CurrentTemperature);
 internal record TestTemperatureResponse(double Temperature, string Unit);
+internal record UpdateDeviceRequest(string Name, Guid DeviceId);
