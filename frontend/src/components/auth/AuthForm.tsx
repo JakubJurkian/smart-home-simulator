@@ -109,7 +109,7 @@ const AuthForm = ({
             {isLoading
               ? "Connecting..."
               : isLoginMode
-              ? "Sign In"
+              ? "Log In"
               : "Create Account"}
           </button>
         </form>
