@@ -22,9 +22,9 @@ public class MaintenanceLogsController(IMaintenanceLogService logService, ILogge
     {
         try
         {
-            logService.AddLog(request.DeviceId, request.Title, request.Description);
+            var newId = logService.AddLog(request.DeviceId, request.Title, request.Description);
             logger.LogInformation("Added new maintenance log for device {DeviceId}", request.DeviceId);
-            return Ok(new { message = "Log added." });
+            return Ok(new { message = "Log added.", id = newId });
         }
         catch (Exception ex)
         {

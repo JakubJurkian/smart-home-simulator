@@ -5,11 +5,12 @@ namespace SmartHome.Infrastructure.Services;
 
 public class MaintenanceLogService(IMaintenanceLogRepository logRepository) : IMaintenanceLogService
 {
-    public void AddLog(Guid deviceId, string title, string description)
+    public Guid AddLog(Guid deviceId, string title, string description)
     {
+        var id = Guid.NewGuid();
         var log = new MaintenanceLog
         {
-            Id = Guid.NewGuid(),
+            Id = id,
             DeviceId = deviceId,
             Title = title,
             Description = description,
@@ -17,6 +18,7 @@ public class MaintenanceLogService(IMaintenanceLogRepository logRepository) : IM
         };
 
         logRepository.Add(log);
+        return id;
     }
 
     public IEnumerable<MaintenanceLog> GetLogsForDevice(Guid deviceId)

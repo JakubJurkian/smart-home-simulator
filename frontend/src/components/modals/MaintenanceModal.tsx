@@ -52,8 +52,10 @@ const MaintenanceModal = ({
 
         if (!res.ok) throw new Error("Failed to add");
 
+        const responseData = await res.json();
+
         const newLog: MaintenanceLog = {
-          id: Math.random().toString(),
+          id: responseData.id,
           deviceId,
           title,
           description: desc,
