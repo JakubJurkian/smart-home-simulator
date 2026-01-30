@@ -4,11 +4,11 @@ namespace SmartHome.Domain.Interfaces;
 
 public interface IUserRepository
 {
-    void Add(User user);
-    User? GetByEmail(string email);
-    User? GetById(Guid id);
-    IEnumerable<User> Search(string phrase); // Points for searching
-    void Update(User user);
+    Task<User?> GetByIdAsync(Guid id);
+    Task AddAsync(User user);
+    Task UpdateAsync(User user);
+    Task DeleteAsync(User user);
 
-    void Delete(User user);
+    Task<User?> GetByEmailAsync(string email);
+    Task<bool> IsEmailTakenAsync(string email);
 }

@@ -1,60 +1,72 @@
 using Microsoft.AspNetCore.Mvc;
-using SmartHome.Domain.Interfaces;
-using SmartHome.Domain.Entities;
 using SmartHome.Api.Dtos;
+using SmartHome.Domain.Interfaces;
 
 namespace SmartHome.Api.Controllers;
 
 [ApiController]
 [Route("api/users")]
-public class UsersController(IUserService userService, ILogger<UsersController> logger) : ControllerBase
+public class UsersController(
+    IUserService userService,
+    ILogger<UsersController> logger,
+    IHostEnvironment env) : ControllerBase
 {
-    private readonly IUserService _userService = userService;
+    private Guid GetCurrentUserId()
+    {
+        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
+            Guid.TryParse(userIdString, out var userId))
+        {
+            return userId;
+        }
+        throw new UnauthorizedAccessException("User not logged in.");
+    }
 
     // POST: api/users/register
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterRequest request)
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
         {
-            var userId = _userService.Register(request.Username, request.Email, request.Password);
+            var userId = await userService.RegisterAsync(request.Username, request.Email, request.Password);
 
-            logger.LogInformation("User registered successfully. New ID: {UserId}", userId);
-            // return 201 Created & ID of a new user
-            return CreatedAtAction(nameof(Register), new { id = userId });
+            logger.LogInformation("User registered successfully. ID: {UserId}", userId);
+
+            return StatusCode(201, new { id = userId, message = "Registration successful" });
+        }
+        catch (ArgumentException ex)
+        {
+            logger.LogWarning("Registration failed: {Message}", ex.Message);
+            return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            logger.LogWarning("Registration failed for {Email}. Reason: {Message}", request.Email, ex.Message);
-            // 400 Bad Request
-            return BadRequest(new { message = ex.Message });
+            logger.LogError(ex, "Registration error");
+            return StatusCode(500, new { message = "Internal Server Error" });
         }
     }
 
     // POST: api/users/login
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        logger.LogInformation("Login attempt for email: {Email}", request.Email);
-        var user = _userService.Login(request.Email, request.Password);
+        var user = await userService.LoginAsync(request.Email, request.Password);
 
         if (user == null)
         {
-            logger.LogWarning("Login failed for {Email} (Invalid credentials)", request.Email);
+            logger.LogWarning("Login failed for {Email}", request.Email);
             return Unauthorized(new { message = "Invalid email or password" });
         }
 
-        logger.LogInformation("User logged in successfully: {UserId}", user.Id);
-        // cookies
+        logger.LogInformation("User logged in: {UserId}", user.Id);
+
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, // JavaScript nie może tego ukraść (XSS Protection)
-            Secure = false,  // Na localhost false, na produkcji true (HTTPS)
+            HttpOnly = true, // JS nie ma dostępu do tego ciastka
+            Secure = !env.IsDevelopment(),
             SameSite = SameSiteMode.Strict,
             Expires = DateTime.UtcNow.AddDays(7)
         };
 
-        // Zapisujemy ID użytkownika w ciastku "UserId"
         Response.Cookies.Append("userId", user.Id.ToString(), cookieOptions);
 
         return Ok(new
@@ -70,72 +82,69 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        // Remove Cookie
         Response.Cookies.Delete("userId");
         return Ok(new { message = "Logged out" });
     }
 
+    // PUT: api/users/{id}
     [HttpPut("{id}")]
-    public IActionResult UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
     {
         try
         {
-            // Security Check: Ensure user is modifying their own account
             var currentUserId = GetCurrentUserId();
             if (currentUserId != id)
             {
-                logger.LogWarning("User {CurrentId} tried to modify account {TargetId}", currentUserId, id);
                 return Forbid(); // 403 Forbidden
             }
 
-            _userService.UpdateUser(id, request.Username, request.Password);
+            bool updated = await userService.UpdateUserAsync(id, request.Username, request.Password);
 
-            logger.LogInformation("User {UserId} updated their profile.", id);
+            if (!updated)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
+            logger.LogInformation("User {UserId} updated profile.", id);
             return Ok(new { message = "Profile updated successfully." });
         }
         catch (UnauthorizedAccessException)
         {
-            return Unauthorized();
+            return Unauthorized(); // 401
+        }
+        catch (ArgumentException ex)
+        {
+            return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error updating user {UserId}", id);
             return BadRequest(new { message = ex.Message });
         }
     }
 
-    private Guid GetCurrentUserId()
-    {
-        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
-            Guid.TryParse(userIdString, out var userId))
-        {
-            return userId;
-        }
-        throw new UnauthorizedAccessException("User not logged in");
-    }
-
+    // DELETE: api/users/{id}
     [HttpDelete("{id}")]
-    public IActionResult DeleteUser(Guid id)
+    public async Task<IActionResult> DeleteUser(Guid id)
     {
         try
         {
-            /// Security Check: Ensure the current user is deleting their own account
             var currentUserId = GetCurrentUserId();
             if (currentUserId != id)
             {
-                logger.LogWarning("Security Alert: User {CurrentId} tried to delete user {TargetId}", currentUserId, id);
-                return Forbid(); // 403 Forbidden
+                return Forbid();
             }
 
-            // Delete from database
-            _userService.DeleteUser(id);
-            logger.LogInformation("User account {UserId} deleted permanently.", id);
+            bool deleted = await userService.DeleteUserAsync(id);
 
-            // Remove cookie (Logout)
+            if (!deleted)
+            {
+                return NotFound(new { message = "User not found." });
+            }
+
             Response.Cookies.Delete("userId");
 
-            // Return 204 No Content (standard for DELETE)
-            return NoContent();
+            logger.LogInformation("User account {UserId} deleted.", id);
+            return NoContent(); // 204
         }
         catch (UnauthorizedAccessException)
         {
@@ -143,7 +152,6 @@ public class UsersController(IUserService userService, ILogger<UsersController> 
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error deleting user {UserId}", id);
             return BadRequest(new { message = ex.Message });
         }
     }

@@ -102,7 +102,7 @@ public class TcpSmartHomeServer : BackgroundService
                 var email = parts[1];
                 var pass = parts[2];
                 
-                var user = userService.Login(email, pass);
+                var user = await userService.LoginAsync(email, pass);
                 if (user == null) return ("Invalid credentials.", null);
 
                 return ($"Welcome {user.Username}! You are now logged in.", user.Id);

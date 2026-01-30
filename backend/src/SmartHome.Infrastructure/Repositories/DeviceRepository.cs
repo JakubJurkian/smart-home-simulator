@@ -6,7 +6,7 @@ using SmartHome.Infrastructure.Persistence;
 namespace SmartHome.Infrastructure.Repositories;
 
 // Inject (DbContext) - connection with db
-public class SqlDeviceRepository(SmartHomeDbContext context) : IDeviceRepository
+public class DeviceRepository(SmartHomeDbContext context) : IDeviceRepository
 {
     public void Add(Device device)
     {
