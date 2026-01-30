@@ -58,8 +58,8 @@ export const api = {
     delete: (id: string) => request(`/devices/${id}`, "DELETE"),
     toggle: (id: string, action: "turn-on" | "turn-off") =>
       request(`/devices/${id}/${action}`, "PUT"),
-    rename: (id: string, newName: string) =>
-      request(`/devices/${id}`, "PUT", { newName }),
+    rename: (id: string, name: string) =>
+      request(`/devices/${id}`, "PUT", { name }),
   },
 
   rooms: {
