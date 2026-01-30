@@ -76,4 +76,9 @@ public class UserService(IUserRepository userRepository) : IUserService
         await userRepository.DeleteAsync(user);
         return true;
     }
+
+    public async Task<User?> GetUserByIdAsync(Guid id)
+    {
+        return await userRepository.GetByIdAsync(id);
+    }
 }

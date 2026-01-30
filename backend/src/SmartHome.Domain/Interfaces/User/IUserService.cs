@@ -9,5 +9,6 @@ public interface IUserService
 
     Task<bool> UpdateUserAsync(Guid id, string username, string? newPassword);
     Task<bool> DeleteUserAsync(Guid id);
+    Task<User?> GetUserByIdAsync(Guid id);
 }
 
