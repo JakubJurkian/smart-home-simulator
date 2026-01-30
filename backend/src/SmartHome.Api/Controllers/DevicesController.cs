@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Device;
 using SmartHome.Domain.Entities;
 using SmartHome.Api.Dtos;
 
@@ -11,12 +11,12 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 {
 
     [HttpGet]
-    public IActionResult GetDevices()
+    public async Task<IActionResult> GetDevices()
     {
         try
         {
             var userId = GetCurrentUserId();
-            var devices = service.GetAllDevices(userId);
+            var devices = await service.GetAllDevicesAsync(userId);
             logger.LogInformation("Retrieving the list of all devices from the database...");
             return Ok(devices);
         }
@@ -28,7 +28,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPost("lightbulb")] // api/devices/lightbulb
-    public IActionResult AddLightBulb([FromBody] CreateDeviceRequest request)
+    public async Task<IActionResult> AddLightBulb([FromBody] CreateDeviceRequest request)
     {
         logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.RoomId);
 
@@ -36,7 +36,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
         try
         {
             var userId = GetCurrentUserId();
-            var id = service.AddLightBulb(request.Name, request.RoomId, userId);
+            var id = await service.AddLightBulbAsync(request.Name, request.RoomId, userId);
             logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
             return CreatedAtAction(nameof(GetDevices), new { id });
 
@@ -45,10 +45,10 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpGet("{id}")] // api/devices/[guid]
-    public IActionResult GetDeviceById(Guid id)
+    public async Task<IActionResult> GetDeviceById(Guid id)
     {
         var userId = GetCurrentUserId();
-        var device = service.GetDeviceById(id, userId);
+        var device = await service.GetDeviceByIdAsync(id, userId);
         if (device == null)
         {
             logger.LogWarning("Device {DeviceId} not found.", id);
@@ -61,15 +61,15 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPut("{id}/turn-on")]
-    public IActionResult TurnOn(Guid id)
+    public async Task<IActionResult> TurnOn(Guid id)
     {
         var userId = GetCurrentUserId();
-        var success = service.TurnOn(id, userId);
+        var success = await service.TurnOnAsync(id, userId);
 
         if (success)
         {
             logger.LogInformation("Turned ON device: {DeviceId}", id);
-            var device = service.GetDeviceById(id, userId);
+            var device = service.GetDeviceByIdAsync(id, userId);
             return Ok(new { message = "Device turned on", device });
         }
 
@@ -78,15 +78,15 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPut("{id}/turn-off")]
-    public IActionResult TurnOff(Guid id)
+    public async Task<IActionResult> TurnOff(Guid id)
     {
         var userId = GetCurrentUserId();
-        var success = service.TurnOff(id, userId);
+        var success = await service.TurnOffAsync(id, userId);
 
         if (success)
         {
             logger.LogInformation("Turned OFF device: {DeviceId}", id);
-            var device = service.GetDeviceById(id, userId);
+            var device = service.GetDeviceByIdAsync(id, userId);
             return Ok(new { message = "Device turned off", device });
         }
 
@@ -95,21 +95,21 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPost("temperaturesensor")]
-    public IActionResult AddSensor([FromBody] CreateDeviceRequest request)
+    public async Task<IActionResult> AddSensor([FromBody] CreateDeviceRequest request)
     {
         logger.LogInformation("Request to add Sensor: '{Name}'", request.Name);
         var userId = GetCurrentUserId();
-        var id = service.AddTemperatureSensor(request.Name, request.RoomId, userId);
+        var id = await service.AddTemperatureSensorAsync(request.Name, request.RoomId, userId);
 
         logger.LogInformation("Created Sensor with ID: {DeviceId}", id);
         return CreatedAtAction(nameof(GetDeviceById), new { id }, new { id });
     }
 
     [HttpGet("{id}/temperature")]
-    public IActionResult GetTemperature(Guid id)
+    public async Task<IActionResult> GetTemperature(Guid id)
     {
         var userId = GetCurrentUserId();
-        var temp = service.GetTemperature(id, userId);
+        var temp = await service.GetTemperatureAsync(id, userId);
 
         if (temp.HasValue)
         {
@@ -122,10 +122,10 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(Guid id)
+    public async Task<IActionResult> Delete(Guid id)
     {
         var userId = GetCurrentUserId();
-        var success = service.DeleteDevice(id, userId);
+        var success = await service.DeleteDeviceAsync(id, userId);
 
         if (!success)
         {
@@ -148,10 +148,10 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpGet("all-system")] // /api/devices/all-system
-    public ActionResult<IEnumerable<DeviceDto>> GetAllSystemDevices()
+    public async Task<ActionResult<IEnumerable<DeviceDto>>> GetAllSystemDevices()
     {
         // download all from server repository
-        var devices = service.GetAllServersSide();
+        var devices = await service.GetAllServersSideAsync();
 
         var dtos = devices.Select(d => new DeviceDto(
         d.Id,
@@ -165,10 +165,10 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPut("{id}")]
-    public IActionResult RenameDevice(Guid id, [FromBody] RenameDeviceRequest request)
+    public async Task<IActionResult> RenameDevice(Guid id, [FromBody] RenameDeviceRequest request)
     {
         var userId = GetCurrentUserId();
-        var success = service.RenameDevice(id, request.Name, userId);
+        var success = await service.RenameDeviceAsync(id, request.Name, userId);
 
         if (success)
         {

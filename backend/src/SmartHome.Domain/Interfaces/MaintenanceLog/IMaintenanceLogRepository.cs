@@ -1,6 +1,5 @@
+namespace SmartHome.Domain.Interfaces.MaintenanceLog;
 using SmartHome.Domain.Entities;
-
-namespace SmartHome.Domain.Interfaces;
 
 public interface IMaintenanceLogRepository
 {

@@ -1,4 +1,8 @@
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.User;
+using SmartHome.Domain.Interfaces.Room;
+using SmartHome.Domain.Interfaces.MaintenanceLog;
+
 using SmartHome.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;
@@ -49,10 +53,10 @@ builder.Services.AddScoped<IDeviceNotifier, SignalRNotifier>();
 // builder.Services.AddSingleton<IDeviceRepository, InMemoryDeviceRepository>();
 
 // We changed AddSingleton to AddScoped. DB lives shortly (for request)
-builder.Services.AddScoped<IDeviceRepository, SqlDeviceRepository>();
+builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 
-builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IMaintenanceLogRepository, MaintenanceLogRepository>();

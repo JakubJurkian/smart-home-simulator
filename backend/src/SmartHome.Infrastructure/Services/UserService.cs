@@ -1,94 +1,79 @@
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.User;
 
 namespace SmartHome.Infrastructure.Services;
 
-public class UserService(IUserRepository userRepository, IDeviceRepository deviceRepository) : IUserService
+public class UserService(IUserRepository userRepository) : IUserService
 {
-    public Guid Register(string username, string email, string password, string role = "User")
+    public async Task<Guid> RegisterAsync(string username, string email, string password)
     {
-        // Check if email already exists
-        var existingUser = userRepository.GetByEmail(email);
-        if (existingUser != null)
+        if (await userRepository.IsEmailTakenAsync(email))
         {
-            throw new Exception("Email is already taken.");
+            throw new ArgumentException("Email is already registered.");
         }
 
-        // Hash the password (NEVER store plain text!)
-        // BCrypt automatically generates a "salt", so two identical passwords will have different hashes.
+        // password hashing -> BCrypt autom. generates salt so the same two password would have different hashes
         string passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-        // Create the user object
         var user = new User
         {
+            Id = Guid.NewGuid(),
             Username = username,
             Email = email,
-            PasswordHash = passwordHash, // Store the hash, not the actual password
-            Role = role
+            PasswordHash = passwordHash,
+            CreatedAt = DateTime.UtcNow
         };
 
-        // Save to the database
-        userRepository.Add(user);
+        await userRepository.AddAsync(user);
+
         return user.Id;
     }
 
-    public User? Login(string email, string password)
+    public async Task<User?> LoginAsync(string email, string password)
     {
-        // 1. Find the user by email
-        var user = userRepository.GetByEmail(email);
+        var user = await userRepository.GetByEmailAsync(email);
+
         if (user == null)
         {
-            return null; // Email not found
+            return null;
         }
 
-        // 2. Verify the password
-        // Compare the provided password with the stored hash
+        // password verification
         bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
 
         if (!isPasswordValid)
         {
-            return null; // Invalid password
+            return null;
         }
 
-        return user; // Success!
+        return user;
     }
 
-    public User? GetById(Guid id)
+    public async Task<bool> UpdateUserAsync(Guid id, string username, string? newPassword)
     {
-        return userRepository.GetById(id);
-    }
+        var user = await userRepository.GetByIdAsync(id);
+        if (user == null) return false;
 
-    public IEnumerable<User> SearchUsers(string phrase)
-    {
-        return userRepository.Search(phrase);
-    }
+        if (user.Username != username)
+        {
+            user.Username = username;
+        }
 
-    public void UpdateUser(Guid id, string newUsername, string? newPassword)
-    {
-        var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
-
-        // Update Username
-        user.Username = newUsername;
-
-        // Update Password (ONLY if provided)
         if (!string.IsNullOrEmpty(newPassword))
         {
-            // Use BCrypt or your hashing logic here (same as in Register method)
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         }
 
-        // Save changes
-        userRepository.Update(user);
+        await userRepository.UpdateAsync(user);
+        return true;
     }
 
-    public void DeleteUser(Guid id)
+    public async Task<bool> DeleteUserAsync(Guid id)
     {
-        var user = userRepository.GetById(id) ?? throw new Exception("User not found.");
+        var user = await userRepository.GetByIdAsync(id);
+        if (user == null) return false;
 
-        // remove all devices belonging to this user (cleanup)
-        deviceRepository.DeleteAllByUserId(id);
-
-        // delete the user
-        userRepository.Delete(user);
+        await userRepository.DeleteAsync(user);
+        return true;
     }
 }

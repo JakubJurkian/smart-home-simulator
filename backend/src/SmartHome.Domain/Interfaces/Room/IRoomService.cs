@@ -1,5 +1,6 @@
+namespace SmartHome.Domain.Interfaces.Room;
+
 using SmartHome.Domain.Entities;
-namespace SmartHome.Domain.Interfaces;
 
 public interface IRoomService
 {
