@@ -6,9 +6,9 @@ namespace SmartHome.Infrastructure.Services;
 public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifier) : IDeviceService
 {
     public async Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId, string? search = null)
-{
-    return await repository.GetAllByUserIdAsync(userId, search);
-}
+    {
+        return await repository.GetAllByUserIdAsync(userId, search);
+    }
 
     public async Task<Device?> GetDeviceByIdAsync(Guid id, Guid userId)
     {
@@ -81,7 +81,7 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
         return true;
     }
 
-    public async Task UpdateTemperatureAsync(Guid id, double temp)
+    public async Task<bool> UpdateTemperatureAsync(Guid id, double temp)
     {
         var devices = await repository.GetAllAsync();
         var device = devices.FirstOrDefault(d => d.Id == id);
@@ -90,6 +90,11 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
         {
             sensor.SetTemperature(temp);
             await repository.UpdateAsync(sensor);
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -110,10 +115,5 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
             await notifier.NotifyDeviceChanged();
             return true;
         }
-    }
-
-    Task<bool> IDeviceService.UpdateTemperatureAsync(Guid id, double temp)
-    {
-        throw new NotImplementedException();
     }
 }
