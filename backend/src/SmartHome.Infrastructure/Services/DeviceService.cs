@@ -5,11 +5,10 @@ namespace SmartHome.Infrastructure.Services;
 
 public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifier) : IDeviceService
 {
-    public async Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId)
-    {
-        var devices = await repository.GetAllByUserIdAsync(userId);
-        return devices;
-    }
+    public async Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId, string? search = null)
+{
+    return await repository.GetAllByUserIdAsync(userId, search);
+}
 
     public async Task<Device?> GetDeviceByIdAsync(Guid id, Guid userId)
     {

@@ -17,10 +17,20 @@ public class DeviceRepository(SmartHomeDbContext context) : IDeviceRepository
         await context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<Device>> GetAllByUserIdAsync(Guid userId)
+    public async Task<IEnumerable<Device>> GetAllByUserIdAsync(Guid userId, string? search = null)
     {
-        // Download all to list
-        return await context.Devices.Include(d => d.Room).Where(d => d.UserId == userId).AsNoTracking().ToListAsync();
+        var query = context.Devices
+        .Include(d => d.Room)
+        .Where(d => d.UserId == userId)
+        .AsNoTracking(); // optimization (read-only)
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            // SQL: WHERE ... AND lower(Name) LIKE '%search%'
+            query = query.Where(d => d.Name.ToLower().Contains(search.ToLower()));
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task<Device?> GetAsync(Guid id, Guid userId)

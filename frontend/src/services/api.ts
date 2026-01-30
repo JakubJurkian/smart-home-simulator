@@ -49,7 +49,10 @@ export const api = {
   },
 
   devices: {
-    getAll: () => request("/devices"),
+    getAll: (search?: string) =>
+      request(
+        search ? `/devices?search=${encodeURIComponent(search)}` : "/devices",
+      ),
     add: (type: string, data: AddDeviceRequest) =>
       request(`/devices/${type}`, "POST", data),
     delete: (id: string) => request(`/devices/${id}`, "DELETE"),
