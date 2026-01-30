@@ -11,12 +11,12 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 {
 
     [HttpGet]
-    public IActionResult GetDevices()
+    public async Task<IActionResult> GetDevices()
     {
         try
         {
             var userId = GetCurrentUserId();
-            var devices = service.GetAllDevicesAsync(userId);
+            var devices = await service.GetAllDevicesAsync(userId);
             logger.LogInformation("Retrieving the list of all devices from the database...");
             return Ok(devices);
         }
