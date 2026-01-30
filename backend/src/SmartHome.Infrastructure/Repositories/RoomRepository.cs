@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SmartHome.Domain.Entities;
 using SmartHome.Domain.Interfaces;
 using SmartHome.Infrastructure.Persistence;
@@ -6,35 +7,40 @@ namespace SmartHome.Infrastructure.Repositories;
 
 public class RoomRepository(SmartHomeDbContext context) : IRoomRepository
 {
-    public void Add(Room room)
+    public async Task AddAsync(Room room)
     {
-        context.Rooms.Add(room);
-        context.SaveChanges();
+        await context.Rooms.AddAsync(room); 
+        await context.SaveChangesAsync();
     }
 
-    public IEnumerable<Room> GetAllByUserId(Guid userId)
+    public async Task<IEnumerable<Room>> GetAllByUserIdAsync(Guid userId)
     {
-        return context.Rooms.Where(r => r.UserId == userId).ToList();
+        return await context.Rooms
+            .Where(r => r.UserId == userId)
+            .OrderBy(r => r.Name)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
-    public Room? GetById(Guid id)
+    public async Task<Room?> GetByIdAsync(Guid id)
     {
-        return context.Rooms.Find(id);
+        return await context.Rooms.FindAsync(id);
     }
 
-    public void Delete(Guid id)
-    {
-        var room = context.Rooms.Find(id);
-        if (room != null)
-        {
-            context.Rooms.Remove(room);
-            context.SaveChanges();
-        }
-    }
-
-    public void Update(Room room)
+    public async Task UpdateAsync(Room room)
     {
         context.Rooms.Update(room);
-        context.SaveChanges();
+        await context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(Room room)
+    {
+        context.Rooms.Remove(room);
+        await context.SaveChangesAsync();
+    }
+    public async Task<bool> RoomNameExistsAsync(string name, Guid userId)
+    {
+        return await context.Rooms
+            .AnyAsync(r => r.UserId == userId && r.Name.ToLower() == name.ToLower());
     }
 }

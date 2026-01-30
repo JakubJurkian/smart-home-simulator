@@ -4,9 +4,10 @@ namespace SmartHome.Domain.Interfaces;
 
 public interface IRoomRepository
 {
-    void Add(Room room);
-    IEnumerable<Room> GetAllByUserId(Guid userId);
-    Room? GetById(Guid id);
-    void Delete(Guid id);
-    void Update(Room room);
+    Task AddAsync(Room room);
+    Task<IEnumerable<Room>> GetAllByUserIdAsync(Guid userId);
+    Task<Room?> GetByIdAsync(Guid id);
+    Task UpdateAsync(Room room);
+    Task DeleteAsync(Room room);
+    Task<bool> RoomNameExistsAsync(string name, Guid userId);
 }

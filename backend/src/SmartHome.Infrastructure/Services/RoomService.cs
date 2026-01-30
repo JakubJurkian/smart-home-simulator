@@ -3,28 +3,70 @@ using SmartHome.Domain.Interfaces;
 
 namespace SmartHome.Infrastructure.Services;
 
-public class RoomService(IRoomRepository roomRepository, IDeviceRepository deviceRepository) : IRoomService
+public class RoomService(IRoomRepository roomRepository) : IRoomService
 {
-    public void AddRoom(Guid userId, string name)
+    public async Task<IEnumerable<Room>> GetAllAsync(Guid userId)
     {
-        var room = new Room { Id = Guid.NewGuid(), UserId = userId, Name = name };
-        roomRepository.Add(room);
+        return await roomRepository.GetAllByUserIdAsync(userId);
     }
 
-    public IEnumerable<Room> GetUserRooms(Guid userId)
+    public async Task<Guid> AddRoomAsync(string name, Guid userId)
     {
-        return roomRepository.GetAllByUserId(userId);
+        bool exists = await roomRepository.RoomNameExistsAsync(name, userId);
+        if (exists)
+        {
+            throw new ArgumentException($"Room '{name}' already exists.");
+        }
+
+        var room = new Room
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            UserId = userId
+        };
+
+        await roomRepository.AddAsync(room);
+
+        return room.Id;
     }
 
-    public void DeleteRoom(Guid id)
+    public async Task<bool> RenameRoomAsync(Guid id, string newName, Guid userId)
     {
-        deviceRepository.DeleteAllByRoomId(id);
-        roomRepository.Delete(id);
+        var room = await roomRepository.GetByIdAsync(id);
+
+        if (room == null || room.UserId != userId)
+        {
+            return false;
+        }
+
+        if (room.Name.Equals(newName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        bool nameTaken = await roomRepository.RoomNameExistsAsync(newName, userId);
+        if (nameTaken)
+        {
+            throw new ArgumentException($"Room '{newName}' already exists.");
+        }
+
+        room.Name = newName;
+        await roomRepository.UpdateAsync(room);
+
+        return true;
     }
-    public void RenameRoom(Guid id, string newName)
+
+    public async Task<bool> DeleteRoomAsync(Guid id, Guid userId)
     {
-        var room = roomRepository.GetById(id) ?? throw new Exception("Room not found.");
-        room.Rename(newName);
-        roomRepository.Update(room);
+        var room = await roomRepository.GetByIdAsync(id);
+
+        if (room == null || room.UserId != userId)
+        {
+            return false;
+        }
+
+        await roomRepository.DeleteAsync(room);
+
+        return true;
     }
 }
