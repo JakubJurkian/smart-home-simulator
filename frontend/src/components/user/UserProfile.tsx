@@ -178,6 +178,7 @@ const UserProfile = ({
             } w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none`}
             minLength={1}
             onBlur={handleUsernameBlur}
+            autoComplete="username"
           />
           {usernameError && (
             <p className="text-xs text-red-500 mt-1">{usernameError}</p>
@@ -195,6 +196,7 @@ const UserProfile = ({
                 value="********"
                 disabled
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-400"
+                autoComplete="current-password"
               />
               <button
                 type="button"
@@ -220,6 +222,7 @@ const UserProfile = ({
                   }`}
                   minLength={8}
                   maxLength={128}
+                  autoComplete="new-password"
                 />
                 {passError && (
                   <p className="text-xs text-red-500 mt-1">{passError}</p>
@@ -238,6 +241,7 @@ const UserProfile = ({
                       ? "border-red-500 focus:ring-red-200"
                       : "border-gray-300"
                   }`}
+                  autoComplete="new-password"
                 />
                 {confirmError && (
                   <p className="text-xs text-red-500 mt-1">{confirmError}</p>

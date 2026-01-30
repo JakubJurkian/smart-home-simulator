@@ -88,6 +88,7 @@ const AuthForm = ({
             onChange={(e) => setEmail(e.target.value)}
             className="p-3 border rounded-lg w-full"
             required
+            autoComplete="email"
           />
           <input
             type="password"
@@ -96,6 +97,7 @@ const AuthForm = ({
             onChange={(e) => setPassword(e.target.value)}
             className="p-3 border rounded-lg w-full"
             required
+            autoComplete="current-password"
           />
           <button
             type="submit"
