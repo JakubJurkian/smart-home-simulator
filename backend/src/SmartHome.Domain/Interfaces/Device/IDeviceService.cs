@@ -4,7 +4,7 @@ using SmartHome.Domain.Entities;
 
 public interface IDeviceService
 {
-    Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId);
+    Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId, string? search = null);
     Task<Device?> GetDeviceByIdAsync(Guid id, Guid userId);
 
     Task<double?> GetTemperatureAsync(Guid id, Guid userId);

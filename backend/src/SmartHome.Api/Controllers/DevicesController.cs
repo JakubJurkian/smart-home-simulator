@@ -11,12 +11,13 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 {
 
     [HttpGet]
-    public async Task<IActionResult> GetDevices()
+    // [FromQuery] means: take text from path after ?
+    public async Task<IActionResult> GetDevices([FromQuery] string? search)
     {
         try
         {
             var userId = GetCurrentUserId();
-            var devices = await service.GetAllDevicesAsync(userId);
+            var devices = await service.GetAllDevicesAsync(userId, search);
             logger.LogInformation("Retrieving the list of all devices from the database...");
             return Ok(devices);
         }

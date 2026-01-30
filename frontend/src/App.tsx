@@ -22,6 +22,8 @@ function App() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [temps, setTemps] = useState<Record<string, number>>({});
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   // UI State
   const [actionError, setActionError] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -40,9 +42,10 @@ function App() {
 
   // --- API CALLS ---
 
-  const fetchDevices = useCallback(() => {
+  // Accepts optional search string
+  const fetchDevices = useCallback((search: string = "") => {
     api.devices
-      .getAll()
+      .getAll(search)
       .then((res) => {
         if (res.status === 401) {
           setUser(null);
@@ -76,7 +79,7 @@ function App() {
   // --- EFFECTS ---
   useEffect(() => {
     if (user && view === "dashboard") {
-      fetchDevices();
+      fetchDevices(); // Initial fetch (empty search)
       fetchRooms();
     }
   }, [user, view, fetchDevices, fetchRooms]);
@@ -96,7 +99,7 @@ function App() {
       .then(() => console.log("✅ Connected to SignalR Hub"))
       .catch((err) => console.error("❌ SignalR Connection Error:", err));
 
-    connection.on("RefreshDevices", () => fetchDevices());
+    connection.on("RefreshDevices", () => fetchDevices(searchTerm));
 
     connection.on("ReceiveTemperature", (deviceId: string, newTemp: number) => {
       setTemps((prev) => ({ ...prev, [deviceId]: newTemp }));
@@ -105,7 +108,7 @@ function App() {
     return () => {
       connection.stop();
     };
-  }, [user, fetchDevices]);
+  }, [user, fetchDevices, searchTerm]); // Added searchTerm dependency for SignalR refresh context
 
   // --- HANDLERS ---
 
@@ -117,6 +120,14 @@ function App() {
     setDevices([]);
     setGlobalError(null);
     setActionError(null);
+    setSearchTerm("");
+  };
+
+  // Search Handler
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchDevices(value); // Live search trigger
   };
 
   const handleAddDevice = (name: string, roomId: string, type: string) => {
@@ -124,7 +135,7 @@ function App() {
       .add(type, { name, roomId })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to add device.");
-        fetchDevices();
+        fetchDevices(searchTerm); // Refresh preserving search
       })
       .catch((err) => showError(err.message));
   };
@@ -144,7 +155,7 @@ function App() {
         .delete(id)
         .then((res) => {
           if (!res.ok) throw new Error("Could not delete device.");
-          fetchDevices();
+          fetchDevices(searchTerm);
         })
         .catch((err) => showError(err.message));
     }
@@ -166,7 +177,7 @@ function App() {
       .then((res) => {
         if (res.ok) {
           fetchRooms();
-          fetchDevices();
+          fetchDevices(searchTerm);
         } else alert("Failed to rename room");
       })
       .catch(() => alert("Error renaming room"));
@@ -175,7 +186,7 @@ function App() {
   const handleDeleteRoom = (id: string) => {
     if (
       !confirm(
-        "⚠️ WARNING: Deleting this room will also DELETE ALL DEVICES inside it.\n\nAre you sure?",
+        "WARNING: Deleting this room will also DELETE ALL DEVICES inside it.\n\nAre you sure?",
       )
     )
       return;
@@ -184,7 +195,7 @@ function App() {
       .delete(id)
       .then(() => {
         fetchRooms();
-        fetchDevices();
+        fetchDevices(searchTerm);
       })
       .catch(() => alert("Error deleting room"));
   };
@@ -254,6 +265,17 @@ function App() {
           />
         ) : (
           <>
+            {/* SEARCH BAR */}
+            <div className="mb-8">
+                <input
+                    type="text"
+                    placeholder="🔍 Search for devices (e.g. 'Kitchen Light')..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="w-full p-4 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                />
+            </div>
+
             <RoomManager
               rooms={rooms}
               onAdd={handleAddRoom}
@@ -313,10 +335,14 @@ function App() {
 
             {devices.length === 0 && !globalError && (
               <div className="text-center mt-10 p-10 bg-white rounded-xl border border-dashed border-gray-300">
-                <p className="text-gray-500 text-lg">No devices found.</p>
-                <p className="text-gray-400 text-sm">
-                  Use the form above to add your first device.
+                <p className="text-gray-500 text-lg">
+                    {searchTerm ? "No devices match your search." : "No devices found."}
                 </p>
+                {!searchTerm && (
+                    <p className="text-gray-400 text-sm">
+                    Use the form above to add your first device.
+                    </p>
+                )}
               </div>
             )}
           </>

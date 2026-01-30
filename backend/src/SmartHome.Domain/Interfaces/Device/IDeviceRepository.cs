@@ -4,7 +4,7 @@ using SmartHome.Domain.Entities;
 
 public interface IDeviceRepository
 {
-    Task<IEnumerable<Device>> GetAllByUserIdAsync(Guid userId);
+    Task<IEnumerable<Device>> GetAllByUserIdAsync(Guid userId, string? search = null);
     Task<Device?> GetAsync(Guid id, Guid userId);
     Task AddAsync(Device device);
     Task UpdateAsync(Device device);
