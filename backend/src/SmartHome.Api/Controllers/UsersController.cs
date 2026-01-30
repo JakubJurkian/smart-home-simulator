@@ -155,4 +155,36 @@ public class UsersController(
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+
+            var user = await userService.GetUserByIdAsync(userId);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            return Ok(new
+            {
+                id = user.Id,
+                username = user.Username,
+                email = user.Email
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new { message = "Not logged in" });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting current user");
+            return StatusCode(500, new { message = "Internal Server Error" });
+        }
+    }
 }

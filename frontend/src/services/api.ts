@@ -40,6 +40,7 @@ export const api = {
     register: (data: RegisterRequest) =>
       request("/users/register", "POST", data),
     logout: () => request("/users/logout", "POST"),
+    me: () => request("/users/me"), // checks if user has a valid cookie
   },
 
   users: {

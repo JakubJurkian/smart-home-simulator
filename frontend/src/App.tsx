@@ -31,6 +31,8 @@ function App() {
     useState<Device | null>(null);
   const [view, setView] = useState<"dashboard" | "profile">("dashboard");
 
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
+
   // Derived
   const lightbulbs = devices.filter((d) => d.type === "LightBulb");
   const sensors = devices.filter((d) => d.type === "TemperatureSensor");
@@ -39,6 +41,27 @@ function App() {
     setActionError(message);
     setTimeout(() => setActionError(null), 3000);
   };
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const res = await api.auth.me();
+        if (res.ok) {
+          const userData = await res.json();
+          console.log("Session restored for:", userData.username);
+          setUser(userData);
+        } else {
+          console.log("No active session found.");
+        }
+      } catch (err) {
+        console.error("Session check failed", err);
+      } finally {
+        setIsSessionLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
 
   // --- API CALLS ---
 
@@ -202,6 +225,19 @@ function App() {
 
   // --- RENDER ---
 
+  if (isSessionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700">
+            Loading Smart Home...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <AuthForm onLoginSuccess={handleLoginSuccess} />;
 
   return (
@@ -267,13 +303,13 @@ function App() {
           <>
             {/* SEARCH BAR */}
             <div className="mb-8">
-                <input
-                    type="text"
-                    placeholder="🔍 Search for devices (e.g. 'Kitchen Light')..."
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                    className="w-full p-4 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                />
+              <input
+                type="text"
+                placeholder="🔍 Search for devices (e.g. 'Kitchen Light')..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full p-4 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
             </div>
 
             <RoomManager
@@ -336,12 +372,14 @@ function App() {
             {devices.length === 0 && !globalError && (
               <div className="text-center mt-10 p-10 bg-white rounded-xl border border-dashed border-gray-300">
                 <p className="text-gray-500 text-lg">
-                    {searchTerm ? "No devices match your search." : "No devices found."}
+                  {searchTerm
+                    ? "No devices match your search."
+                    : "No devices found."}
                 </p>
                 {!searchTerm && (
-                    <p className="text-gray-400 text-sm">
+                  <p className="text-gray-400 text-sm">
                     Use the form above to add your first device.
-                    </p>
+                  </p>
                 )}
               </div>
             )}
