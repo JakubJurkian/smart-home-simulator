@@ -1,11 +1,10 @@
 using SmartHome.Domain.Entities;
-
 namespace SmartHome.Domain.Interfaces;
 
 public interface IRoomService
 {
-    void AddRoom(Guid userId, string name);
-    IEnumerable<Room> GetUserRooms(Guid userId);
-    void DeleteRoom(Guid id);
-    void RenameRoom(Guid id, string newName);
+    Task<IEnumerable<Room>> GetAllAsync(Guid userId);
+    Task<Guid> AddRoomAsync(string name, Guid userId);
+    Task<bool> RenameRoomAsync(Guid id, string newName, Guid userId);
+    Task<bool> DeleteRoomAsync(Guid id, Guid userId);
 }

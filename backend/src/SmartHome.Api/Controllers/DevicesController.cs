@@ -28,7 +28,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPost("lightbulb")] // api/devices/lightbulb
-    public IActionResult AddLightBulb([FromBody] CreateLightBulbRequest request)
+    public IActionResult AddLightBulb([FromBody] CreateDeviceRequest request)
     {
         logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.RoomId);
 
@@ -95,7 +95,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     }
 
     [HttpPost("temperaturesensor")]
-    public IActionResult AddSensor([FromBody] CreateSensorRequest request)
+    public IActionResult AddSensor([FromBody] CreateDeviceRequest request)
     {
         logger.LogInformation("Request to add Sensor: '{Name}'", request.Name);
         var userId = GetCurrentUserId();
@@ -168,7 +168,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     public IActionResult RenameDevice(Guid id, [FromBody] RenameDeviceRequest request)
     {
         var userId = GetCurrentUserId();
-        var success = service.RenameDevice(id, request.NewName, userId);
+        var success = service.RenameDevice(id, request.Name, userId);
 
         if (success)
         {
