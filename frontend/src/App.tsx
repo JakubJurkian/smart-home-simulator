@@ -5,7 +5,7 @@ import { HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import type { User, Device, Room } from "./types";
 
 // SERVICES
-import { api } from "./services/api.ts";
+import { api } from "./services/api";
 
 // COMPONENTS
 import AuthForm from "./components/auth/AuthForm";
@@ -38,7 +38,7 @@ function App() {
     setTimeout(() => setActionError(null), 3000);
   };
 
-  // --- API CALLS (Refactored to use api service) ---
+  // --- API CALLS ---
 
   const fetchDevices = useCallback(() => {
     api.devices
@@ -60,7 +60,7 @@ function App() {
         setGlobalError(
           err.message === "Failed to fetch"
             ? "🔌 Connection to server lost."
-            : err.message
+            : err.message,
         );
       });
   }, []);
@@ -81,7 +81,7 @@ function App() {
     }
   }, [user, view, fetchDevices, fetchRooms]);
 
-  // SignalR Logic (No changes needed here as it uses websockets directly)
+  // SignalR Logic
   useEffect(() => {
     if (!user) return;
 
@@ -97,7 +97,6 @@ function App() {
       .catch((err) => console.error("❌ SignalR Connection Error:", err));
 
     connection.on("RefreshDevices", () => fetchDevices());
-    // Optional: connection.on("RefreshRooms", () => fetchRooms());
 
     connection.on("ReceiveTemperature", (deviceId: string, newTemp: number) => {
       setTemps((prev) => ({ ...prev, [deviceId]: newTemp }));
@@ -108,7 +107,7 @@ function App() {
     };
   }, [user, fetchDevices]);
 
-  // --- HANDLERS (Refactored) ---
+  // --- HANDLERS ---
 
   const handleLoginSuccess = (userData: User) => setUser(userData);
 
@@ -135,8 +134,6 @@ function App() {
       .toggle(id, action)
       .then((res) => {
         if (!res.ok) throw new Error(`Could not ${action.replace("-", " ")}.`);
-        // Note: We don't verify success here strictly because SignalR will update the UI,
-        // or we could optimistically update state.
       })
       .catch((err) => showError(err.message));
   };
@@ -147,9 +144,6 @@ function App() {
         .delete(id)
         .then((res) => {
           if (!res.ok) throw new Error("Could not delete device.");
-          // fetchDevices() will be triggered by SignalR if backend sends notification,
-          // otherwise we rely on manual refresh or optimistic update.
-          // For now, let's manually refresh to be safe:
           fetchDevices();
         })
         .catch((err) => showError(err.message));
@@ -181,7 +175,7 @@ function App() {
   const handleDeleteRoom = (id: string) => {
     if (
       !confirm(
-        "⚠️ WARNING: Deleting this room will also DELETE ALL DEVICES inside it.\n\nAre you sure?"
+        "⚠️ WARNING: Deleting this room will also DELETE ALL DEVICES inside it.\n\nAre you sure?",
       )
     )
       return;

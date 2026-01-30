@@ -12,10 +12,42 @@ const MaintenanceModal = ({
   onClose: () => void;
 }) => {
   const [logs, setLogs] = useState<MaintenanceLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Form State
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Validation State
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [descError, setDescError] = useState<string | null>(null);
+
+  // --- DERIVED STATE FOR VALIDATION ---
+
+  // Rules
+  const isTitleValid = title.trim().length >= 1 && title.trim().length <= 32;
+  const isDescValid = desc.trim().length >= 1 && desc.trim().length <= 500;
+
+  // Check against original values if editing, or just validity if adding
+  const getCanSave = () => {
+    if (!isTitleValid || !isDescValid) return false;
+
+    if (editingId) {
+      // Find original log to compare
+      const original = logs.find((l) => l.id === editingId);
+      if (!original) return false;
+
+      const isChanged =
+        title.trim() !== original.title || desc.trim() !== original.description;
+      return isChanged;
+    }
+
+    // If adding, just needs to be valid
+    return true;
+  };
+
+  const canSave = getCanSave();
 
   useEffect(() => {
     api.logs
@@ -28,27 +60,55 @@ const MaintenanceModal = ({
       .catch((err) => console.error("Error loading logs:", err));
   }, [deviceId]);
 
+  // --- HANDLERS ---
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+    if (titleError) setTitleError(null);
+  };
+
+  const handleTitleBlur = () => {
+    const len = title.trim().length;
+    if (len === 0) setTitleError("Title required");
+    else if (len > 32) setTitleError("Max 32 chars");
+  };
+
+  const handleDescChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDesc(e.target.value);
+    if (descError) setDescError(null);
+  };
+
+  const handleDescBlur = () => {
+    if (desc.trim().length === 0) setDescError("Description required");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !desc) return;
+    if (!canSave) return;
 
     try {
       if (editingId) {
         const res = await api.logs.update(editingId, {
-          title,
-          description: desc,
+          title: title.trim(),
+          description: desc.trim(),
         });
 
         if (!res.ok) throw new Error("Failed to update");
 
         setLogs(
           logs.map((log) =>
-            log.id === editingId ? { ...log, title, description: desc } : log
-          )
+            log.id === editingId
+              ? { ...log, title: title.trim(), description: desc.trim() }
+              : log,
+          ),
         );
-        setEditingId(null);
+        handleCancelEdit();
       } else {
-        const res = await api.logs.add({ deviceId, title, description: desc });
+        const res = await api.logs.add({
+          deviceId,
+          title: title.trim(),
+          description: desc.trim(),
+        });
 
         if (!res.ok) throw new Error("Failed to add");
 
@@ -57,14 +117,15 @@ const MaintenanceModal = ({
         const newLog: MaintenanceLog = {
           id: responseData.id,
           deviceId,
-          title,
-          description: desc,
+          title: title.trim(),
+          description: desc.trim(),
           createdAt: new Date().toISOString(),
         };
         setLogs([newLog, ...logs]);
+        // Clear form
+        setTitle("");
+        setDesc("");
       }
-      setTitle("");
-      setDesc("");
     } catch (err) {
       console.log(err);
       alert("Operation failed. Try again.");
@@ -75,12 +136,16 @@ const MaintenanceModal = ({
     setEditingId(log.id);
     setTitle(log.title);
     setDesc(log.description);
+    setTitleError(null);
+    setDescError(null);
   };
 
-  const cancelEdit = () => {
+  const handleCancelEdit = () => {
     setEditingId(null);
     setTitle("");
     setDesc("");
+    setTitleError(null);
+    setDescError(null);
   };
 
   const handleDeleteLog = async (id: string) => {
@@ -89,7 +154,7 @@ const MaintenanceModal = ({
       await api.logs.delete(id);
       setLogs(logs.filter((l) => l.id !== id));
 
-      if (editingId === id) cancelEdit();
+      if (editingId === id) handleCancelEdit();
     } catch (err) {
       console.error(err);
     }
@@ -138,7 +203,7 @@ const MaintenanceModal = ({
                     {new Date(log.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap">
+                <p className="text-gray-600 text-sm mt-1 whitespace-pre-wrap wrap-break-word">
                   {log.description}
                 </p>
 
@@ -172,36 +237,60 @@ const MaintenanceModal = ({
               <span>Editing Entry</span>
               <button
                 type="button"
-                onClick={cancelEdit}
+                onClick={handleCancelEdit}
                 className="text-gray-500 hover:text-gray-800 underline cursor-pointer"
               >
                 Cancel
               </button>
             </div>
           )}
-          <div className="mb-2">
-            <input
-              placeholder="Log Title (e.g. Battery Change)"
-              className="w-full p-2 border rounded text-sm mb-2"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-            <textarea
-              placeholder="Description..."
-              className="w-full p-2 border rounded text-sm"
-              rows={2}
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              required
-            />
+          <div className="mb-2 space-y-2">
+            <div>
+              <input
+                placeholder="Log Title (e.g. Battery Change)"
+                className={`w-full p-2 border rounded text-sm outline-none ${
+                  titleError
+                    ? "border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-1 focus:ring-blue-500"
+                }`}
+                value={title}
+                onChange={handleTitleChange}
+                onBlur={handleTitleBlur}
+                maxLength={32}
+              />
+              {titleError && (
+                <p className="text-xs text-red-500 mt-1">{titleError}</p>
+              )}
+            </div>
+
+            <div>
+              <textarea
+                placeholder="Description..."
+                className={`w-full p-2 border rounded text-sm outline-none ${
+                  descError
+                    ? "border-red-500 focus:ring-1 focus:ring-red-500"
+                    : "border-gray-300 focus:ring-1 focus:ring-blue-500"
+                }`}
+                rows={2}
+                value={desc}
+                onChange={handleDescChange}
+                onBlur={handleDescBlur}
+                maxLength={500}
+              />
+              {descError && (
+                <p className="text-xs text-red-500 mt-1">{descError}</p>
+              )}
+            </div>
           </div>
           <button
             type="submit"
-            className={`w-full py-2 rounded font-medium text-sm transition text-white cursor-pointer ${
-              editingId
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-blue-600 hover:bg-blue-700"
+            disabled={!canSave}
+            className={`w-full py-2 rounded font-medium text-sm transition text-white ${
+              canSave
+                ? editingId
+                  ? "bg-green-600 hover:bg-green-700 cursor-pointer"
+                  : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                : "bg-gray-300 cursor-not-allowed"
             }`}
           >
             {editingId ? "💾 Save Changes" : "➕ Add Entry"}
