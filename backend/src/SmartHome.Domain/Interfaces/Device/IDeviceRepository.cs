@@ -1,15 +1,15 @@
-using SmartHome.Domain.Entities;
+namespace SmartHome.Domain.Interfaces.Device;
 
-namespace SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Entities;
 
 public interface IDeviceRepository
 {
-    IEnumerable<Device> GetAll(Guid userId);
-    Device? Get(Guid id, Guid userId);
-    void Add(Device device);
-    void Update(Device device);
-    void Delete(Guid id);
-    IEnumerable<Device> GetAllServersSide();
-    void DeleteAllByRoomId(Guid roomId);
-    void DeleteAllByUserId(Guid userId);
+    Task<IEnumerable<Device>> GetAllByUserIdAsync(Guid userId);
+    Task<Device?> GetAsync(Guid id, Guid userId);
+    Task AddAsync(Device device);
+    Task UpdateAsync(Device device);
+    Task DeleteAsync(Device device);
+    Task<IEnumerable<Device>> GetAllAsync();
+    Task DeleteAllByRoomIdAsync(Guid roomId, Guid userId);
+    Task DeleteAllByUserIdAsync(Guid userId);
 }

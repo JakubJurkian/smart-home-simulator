@@ -1,6 +1,6 @@
-using SmartHome.Domain.Entities;
+namespace SmartHome.Domain.Interfaces.User;
 
-namespace SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Entities;
 
 public interface IUserRepository
 {

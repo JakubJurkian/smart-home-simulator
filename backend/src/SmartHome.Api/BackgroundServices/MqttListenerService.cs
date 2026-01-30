@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using MQTTnet;
 using MQTTnet.Client;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Device;
 
 namespace SmartHome.Api.BackgroundServices;
 
@@ -78,7 +78,7 @@ public class MqttListenerService(IServiceScopeFactory scopeFactory, ILogger<Mqtt
                     var deviceService = scope.ServiceProvider.GetRequiredService<IDeviceService>();
                     var notifier = scope.ServiceProvider.GetRequiredService<IDeviceNotifier>();
 
-                    deviceService.UpdateTemperature(deviceId, data.temperature);
+                    await deviceService.UpdateTemperatureAsync(deviceId, data.temperature);
 
                     await notifier.PushTemperature(deviceId, data.temperature);
 

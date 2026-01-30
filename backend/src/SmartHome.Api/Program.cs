@@ -1,4 +1,8 @@
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.User;
+using SmartHome.Domain.Interfaces.Room;
+using SmartHome.Domain.Interfaces.MaintenanceLog;
+
 using SmartHome.Infrastructure.Persistence;
 
 using Microsoft.EntityFrameworkCore;

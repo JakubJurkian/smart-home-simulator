@@ -1,23 +1,23 @@
-using SmartHome.Domain.Entities;
+namespace SmartHome.Domain.Interfaces.Device;
 
-namespace SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Entities;
 
 public interface IDeviceService
 {
-    IEnumerable<Device> GetAllDevices(Guid userId);
-    Device? GetDeviceById(Guid id, Guid userId);
+    Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId);
+    Task<Device?> GetDeviceByIdAsync(Guid id, Guid userId);
 
-    double? GetTemperature(Guid id, Guid userId);
+    Task<double?> GetTemperatureAsync(Guid id, Guid userId);
 
-    Guid AddLightBulb(string name, Guid roomId, Guid userId);
-    Guid AddTemperatureSensor(string name, Guid roomId, Guid userId);
+    Task<Guid> AddLightBulbAsync(string name, Guid roomId, Guid userId);
+    Task<Guid> AddTemperatureSensorAsync(string name, Guid roomId, Guid userId);
 
-    bool TurnOn(Guid id, Guid userId);
-    bool TurnOff(Guid id, Guid userId);
+    Task<bool> TurnOnAsync(Guid id, Guid userId);
+    Task<bool> TurnOffAsync(Guid id, Guid userId);
 
-    bool DeleteDevice(Guid id, Guid userId);
-    void UpdateTemperature(Guid id, double temp);
+    Task<bool> DeleteDeviceAsync(Guid id, Guid userId);
+    Task<bool> UpdateTemperatureAsync(Guid id, double temp);
 
-    bool RenameDevice(Guid id, string newName, Guid userId);
-    IEnumerable<Device> GetAllServersSide();
+    Task<bool> RenameDeviceAsync(Guid id, string newName, Guid userId);
+    Task<IEnumerable<Device>> GetAllServersSideAsync();
 }

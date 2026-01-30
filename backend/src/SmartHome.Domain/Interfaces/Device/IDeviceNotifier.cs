@@ -1,4 +1,4 @@
-namespace SmartHome.Domain.Interfaces;
+namespace SmartHome.Domain.Interfaces.Device;
 
 public interface IDeviceNotifier
 {

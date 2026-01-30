@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.User;
 using SmartHome.Infrastructure.Persistence;
 
 namespace SmartHome.Infrastructure.Repositories;
@@ -21,7 +21,7 @@ public class UserRepository(SmartHomeDbContext context) : IUserRepository
 
     public async Task AddAsync(User user)
     {
-        await context.Users.AddAsync(user);
+        context.Users.Add(user);
         await context.SaveChangesAsync();
     }
 

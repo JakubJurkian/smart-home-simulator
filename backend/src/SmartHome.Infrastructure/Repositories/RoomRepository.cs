@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Room;
 using SmartHome.Infrastructure.Persistence;
 
 namespace SmartHome.Infrastructure.Repositories;
@@ -9,7 +9,7 @@ public class RoomRepository(SmartHomeDbContext context) : IRoomRepository
 {
     public async Task AddAsync(Room room)
     {
-        await context.Rooms.AddAsync(room); 
+        context.Rooms.Add(room); 
         await context.SaveChangesAsync();
     }
 

@@ -2,7 +2,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.User;
+using SmartHome.Domain.Interfaces.Device;
 
 namespace SmartHome.Api.BackgroundServices;
 
@@ -38,7 +39,7 @@ public class TcpSmartHomeServer : BackgroundService
     private async Task HandleClientAsync(TcpClient client, CancellationToken stoppingToken)
     {
         _logger.LogInformation("Client connected!");
-        
+
         // This variable stores the state of the current connection
         Guid? currentUserId = null;
 
@@ -62,7 +63,7 @@ public class TcpSmartHomeServer : BackgroundService
                 // Process command and pass the current session state (currentUserId)
                 // We receive a tuple: (Response Message, New User ID if login happened)
                 var (response, newUserId) = await ProcessCommand(commandLine, currentUserId);
-                
+
                 // Update session state if login was successful
                 if (newUserId != null) currentUserId = newUserId;
 
@@ -101,7 +102,7 @@ public class TcpSmartHomeServer : BackgroundService
                 if (parts.Length < 3) return ("Usage: LOGIN <email> <password>", null);
                 var email = parts[1];
                 var pass = parts[2];
-                
+
                 var user = await userService.LoginAsync(email, pass);
                 if (user == null) return ("Invalid credentials.", null);
 
@@ -110,7 +111,7 @@ public class TcpSmartHomeServer : BackgroundService
             case "LIST":
                 if (currentUserId == null) return ("Access Denied. Please LOGIN first.", null);
 
-                var devices = deviceService.GetAllDevices(currentUserId.Value);
+                var devices = await deviceService.GetAllDevicesAsync(currentUserId.Value);
                 var sb = new StringBuilder();
                 sb.AppendLine($"--- Devices for User {currentUserId} ---");
                 foreach (var d in devices)
@@ -118,14 +119,14 @@ public class TcpSmartHomeServer : BackgroundService
                     // Assuming GetAllDevices returns DTOs or Entities
                     // Ideally we should use pattern matching on types or DTO properties
                     // Adjust properties based on your exact DTO/Entity definition
-                    
+
                     string status = "[DEVICE]";
-                    
+
                     // Simple logic to detect status based on dynamic check or DTO properties
-                    if (d.Type.ToLower() == "lightbulb") 
+                    if (d.Type.ToLower() == "lightbulb")
                         status = (d as dynamic).IsOn == true ? "[ON] 💡" : "[OFF] 🌑";
-                    
-                    if (d.Type.ToLower().Contains("sensor")) 
+
+                    if (d.Type.ToLower().Contains("sensor"))
                         status = $"[TEMP: {(d as dynamic).CurrentTemperature ?? "--"}°C] 🌡️";
 
                     sb.AppendLine($"{d.Id} | {d.Name} ({d.Room}) {status}");
@@ -138,24 +139,24 @@ public class TcpSmartHomeServer : BackgroundService
                 if (parts.Length < 2) return ("Error: Provide ID", null);
                 if (!Guid.TryParse(parts[1], out var id)) return ("Error: Invalid GUID", null);
 
-                try 
+                try
                 {
                     // Try to turn ON; if already ON, turn OFF (simple toggle logic)
                     // Note: Since service methods are void, we need to handle exceptions or check state first.
                     // For simplicity in TCP, we just try TurnOn, if it fails logic (e.g. is already on?), we might try TurnOff.
                     // But usually, user knows what they want. Let's assume we want to "Switch State".
                     // Since your Interface has TurnOn/TurnOff as void, we can't easily check state without Getting first.
-                    
-                    var device = deviceService.GetDeviceById(id, currentUserId.Value);
+
+                    var device = await deviceService.GetDeviceByIdAsync(id, currentUserId.Value);
                     if (device == null) return ("Device not found.", null);
 
                     if (device is LightBulb bulb)
                     {
-                        if (bulb.IsOn) 
-                            deviceService.TurnOff(id, currentUserId.Value);
-                        else 
-                            deviceService.TurnOn(id, currentUserId.Value);
-                        
+                        if (bulb.IsOn)
+                            await deviceService.TurnOffAsync(id, currentUserId.Value);
+                        else
+                            await deviceService.TurnOnAsync(id, currentUserId.Value);
+
                         return ("Device state toggled.", null);
                     }
                     return ("Device is not a lightbulb.", null);

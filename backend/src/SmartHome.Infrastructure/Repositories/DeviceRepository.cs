@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Device;
 using SmartHome.Infrastructure.Persistence;
 
 namespace SmartHome.Infrastructure.Repositories;
@@ -8,74 +8,53 @@ namespace SmartHome.Infrastructure.Repositories;
 // Inject (DbContext) - connection with db
 public class DeviceRepository(SmartHomeDbContext context) : IDeviceRepository
 {
-    public void Add(Device device)
+    public async Task AddAsync(Device device)
     {
         // Add to que
         context.Devices.Add(device);
 
         // We send SQL to db
-        context.SaveChanges();
+        await context.SaveChangesAsync();
     }
 
-    public IEnumerable<Device> GetAll(Guid userId)
+    public async Task<IEnumerable<Device>> GetAllByUserIdAsync(Guid userId)
     {
         // Download all to list
-        return [.. context.Devices.Include(d => d.Room).Where(d => d.UserId == userId)];
+        return await context.Devices.Include(d => d.Room).Where(d => d.UserId == userId).AsNoTracking().ToListAsync();
     }
 
-    public Device? Get(Guid id, Guid userId)
+    public async Task<Device?> GetAsync(Guid id, Guid userId)
     {
         // Find by ID (null if not found)
-        return context.Devices.FirstOrDefault(d => d.Id == id && d.UserId == userId);
+        return await context.Devices.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
     }
 
-    public void Update(Device device)
+    public async Task UpdateAsync(Device device)
     {
         context.Devices.Update(device);
-        context.SaveChanges();
+        await context.SaveChangesAsync();
     }
-    public void Delete(Guid id)
-    {
-        var device = context.Devices.Find(id);
-
-        if (device != null)
-        {
-            context.Devices.Remove(device);
-
-            context.SaveChanges();
-        }
-    }
-
-    public void SetTemperature(Guid deviceId, double temperature)
+    public async Task DeleteAsync(Device device)
     {
 
+        context.Devices.Remove(device);
+        await context.SaveChangesAsync();
     }
 
-    public IEnumerable<Device> GetAllServersSide()
+    public async Task<IEnumerable<Device>> GetAllAsync()
     {
-        return [.. context.Devices];
+        return await context.Devices.AsNoTracking().ToListAsync();
     }
 
-    public void DeleteAllByUserId(Guid userId)
+    public async Task DeleteAllByUserIdAsync(Guid userId)
     {
-        var userDevices = context.Devices
-            .Where(d => d.UserId == userId)
-            .ToList();
-
-        if (userDevices.Count != 0)
-        {
-            context.Devices.RemoveRange(userDevices);
-            context.SaveChanges();
-        }
+        await context.Devices.Where(d => d.UserId == userId).ExecuteDeleteAsync();
     }
 
-    public void DeleteAllByRoomId(Guid roomId)
+    public async Task DeleteAllByRoomIdAsync(Guid roomId, Guid userId)
     {
-        var devices = context.Devices.Where(d => d.RoomId == roomId).ToList();
-        if (devices.Count != 0)
-        {
-            context.Devices.RemoveRange(devices);
-            context.SaveChanges();
-        }
+        await context.Devices
+            .Where(d => d.RoomId == roomId && d.UserId == userId)
+            .ExecuteDeleteAsync();
     }
 }

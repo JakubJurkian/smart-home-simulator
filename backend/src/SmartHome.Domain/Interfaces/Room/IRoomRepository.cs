@@ -1,6 +1,6 @@
-using SmartHome.Domain.Entities;
+namespace SmartHome.Domain.Interfaces.Room;
 
-namespace SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Entities;
 
 public interface IRoomRepository
 {

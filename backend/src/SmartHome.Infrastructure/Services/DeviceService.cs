@@ -1,68 +1,70 @@
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Device;
 
 namespace SmartHome.Infrastructure.Services;
 
 public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifier) : IDeviceService
 {
-    public IEnumerable<Device> GetAllDevices(Guid userId)
+    public async Task<IEnumerable<Device>> GetAllDevicesAsync(Guid userId)
     {
-        return repository.GetAll(userId);
+        var devices = await repository.GetAllByUserIdAsync(userId);
+        return devices;
     }
 
-    public Device? GetDeviceById(Guid id, Guid userId)
+    public async Task<Device?> GetDeviceByIdAsync(Guid id, Guid userId)
     {
-        return repository.Get(id, userId);
+        var device = await repository.GetAsync(id, userId);
+        return device;
     }
 
-    public Guid AddLightBulb(string name, Guid roomId, Guid userId)
+    public async Task<Guid> AddLightBulbAsync(string name, Guid roomId, Guid userId)
     {
         var bulb = new LightBulb(name, roomId) { UserId = userId };
-        repository.Add(bulb);
+        await repository.AddAsync(bulb);
         _ = notifier.NotifyDeviceChanged();
         return bulb.Id;
     }
 
-    public Guid AddTemperatureSensor(string name, Guid roomId, Guid userId)
+    public async Task<Guid> AddTemperatureSensorAsync(string name, Guid roomId, Guid userId)
     {
         var sensor = new TemperatureSensor(name, roomId) { UserId = userId };
-        repository.Add(sensor);
+        await repository.AddAsync(sensor);
         _ = notifier.NotifyDeviceChanged();
         return sensor.Id;
     }
 
-    public bool TurnOn(Guid id, Guid userId)
+    public async Task<bool> TurnOnAsync(Guid id, Guid userId)
     {
-        var device = repository.Get(id, userId);
+        var device = await repository.GetAsync(id, userId);
 
         // Pattern Matching
         if (device is LightBulb bulb)
         {
             bulb.TurnOn();
-            repository.Update(bulb);
+            await repository.UpdateAsync(bulb);
             _ = notifier.NotifyDeviceChanged();
             return true;
         }
         return false;
     }
 
-    public bool TurnOff(Guid id, Guid userId)
+    public async Task<bool> TurnOffAsync(Guid id, Guid userId)
     {
-        var device = repository.Get(id, userId);
+        var device = await repository.GetAsync(id, userId);
 
         if (device is LightBulb bulb)
         {
             bulb.TurnOff();
-            repository.Update(bulb);
+            await repository.UpdateAsync(bulb);
             _ = notifier.NotifyDeviceChanged();
             return true;
         }
         return false;
     }
 
-    public double? GetTemperature(Guid id, Guid userId)
+    public async Task<double?> GetTemperatureAsync(Guid id, Guid userId)
     {
-        var device = repository.Get(id, userId);
+        var device = await repository.GetAsync(id, userId);
         if (device is TemperatureSensor sensor)
         {
             return sensor.GetReading();
@@ -70,43 +72,49 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
         return null;
     }
 
-    public bool DeleteDevice(Guid id, Guid userId)
+    public async Task<bool> DeleteDeviceAsync(Guid id, Guid userId)
     {
-        var device = repository.Get(id, userId);
+        var device = await repository.GetAsync(id, userId);
         if (device == null) return false;
 
-        repository.Delete(id);
+        await repository.DeleteAsync(device);
         _ = notifier.NotifyDeviceChanged();
         return true;
     }
 
-    public void UpdateTemperature(Guid id, double temp)
+    public async Task UpdateTemperatureAsync(Guid id, double temp)
     {
-        var device = repository.GetAllServersSide().FirstOrDefault(d => d.Id == id);
+        var devices = await repository.GetAllAsync();
+        var device = devices.FirstOrDefault(d => d.Id == id);
 
         if (device is TemperatureSensor sensor)
         {
             sensor.SetTemperature(temp);
-            repository.Update(sensor);
+            await repository.UpdateAsync(sensor);
         }
     }
 
-    public IEnumerable<Device> GetAllServersSide()
+    public async Task<IEnumerable<Device>> GetAllServersSideAsync()
     {
-        // Przekazujemy zapytanie do repozytorium
-        return repository.GetAllServersSide();
+        // forward query to repo
+        return await repository.GetAllAsync();
     }
 
-    public bool RenameDevice(Guid id, string newName, Guid userId)
+    public async Task<bool> RenameDeviceAsync(Guid id, string newName, Guid userId)
     {
-        var device = repository.Get(id, userId);
+        var device = await repository.GetAsync(id, userId);
         if (device == null) return false;
         else
         {
             device.Rename(newName);
-            repository.Update(device);
-            notifier.NotifyDeviceChanged();
+            await repository.UpdateAsync(device);
+            await notifier.NotifyDeviceChanged();
             return true;
         }
+    }
+
+    Task<bool> IDeviceService.UpdateTemperatureAsync(Guid id, double temp)
+    {
+        throw new NotImplementedException();
     }
 }
