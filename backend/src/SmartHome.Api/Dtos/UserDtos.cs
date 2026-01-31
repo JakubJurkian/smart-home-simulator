@@ -6,7 +6,7 @@ namespace SmartHome.Api.Dtos;
 public class UpdateUserRequest
 {
     [Required]
-    [StringLength(50, MinimumLength = 3)]
+    [StringLength(50, MinimumLength = 1)]
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
 
