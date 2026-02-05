@@ -1,0 +1,6 @@
+{
+  "$schema": "https://schemas.reqnroll.net/reqnroll-config-1.0.json",
+  "unitTestProvider": {
+    "name": "xUnit"
+  }
+}

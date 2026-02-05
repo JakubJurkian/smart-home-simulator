@@ -50,6 +50,7 @@ export interface RegisterRequest {
 export interface AddDeviceRequest {
   name: string;
   roomId: string;
+  type: string;
 }
 
 export interface LogRequest {

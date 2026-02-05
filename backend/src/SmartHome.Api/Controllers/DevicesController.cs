@@ -31,7 +31,8 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpPost("lightbulb")] // api/devices/lightbulb
     public async Task<IActionResult> AddLightBulb([FromBody] CreateDeviceRequest request)
     {
-        logger.LogInformation("Request to add a new LightBulb: '{Name}' in '{Room}'", request.Name, request.RoomId);
+        logger.LogInformation("Request to add device: '{Name}' (Type: {Type}) in Room: {Room}",
+            request.Name, request.Type, request.RoomId);
 
 
         try
@@ -40,9 +41,11 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
             var id = await service.AddLightBulbAsync(request.Name, request.RoomId, userId);
             logger.LogInformation("Successfully created LightBulb with ID: {DeviceId}", id);
             return CreatedAtAction(nameof(GetDevices), new { id });
-
         }
-        catch (UnauthorizedAccessException) { return Unauthorized(); }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     [HttpGet("{id}")] // api/devices/[guid]

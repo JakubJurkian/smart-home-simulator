@@ -1,0 +1,71 @@
+name: .NET CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # 3. Restore
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # 4. Build
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      # 5. Unit Tests
+      - name: Run Unit Tests
+        run: dotnet test tests/SmartHome.UnitTests/SmartHome.UnitTests.csproj --no-build --configuration Release --verbosity normal
+
+      # 6. Integration Tests
+      - name: Run Integration Tests
+        run: dotnet test tests/SmartHome.IntegrationTests/SmartHome.IntegrationTests.csproj --no-build --configuration Release --verbosity normal
+
+      # 7. BDD Tests
+      - name: Run BDD Tests
+        run: dotnet test tests/SmartHome.BDDTests/SmartHome.BDDTests.csproj --no-build --configuration Release --verbosity normal
+
+      # 8. Start API in background
+      - name: Start API for Performance Tests
+        run: |
+          # Start API in background, redirect output to api.log to prevent freezing and enable debugging
+          nohup dotnet run --project backend/src/SmartHome.Api/SmartHome.Api.csproj --configuration Release --urls "http://localhost:5187" > api.log 2>&1 &
+          
+          echo "Waiting for API to start..."
+          
+          # Loop up to 60 times (60 seconds) checking if the API responds
+          for i in {1..60}; do
+            # Try to fetch rooms. Even 401 or empty json means the server IS UP.
+            # We use -s (silent) and check exit code.
+            if curl -s http://localhost:5187/api/rooms > /dev/null; then
+              echo "API started successfully"
+              exit 0
+            fi
+            echo "Waiting for API... ($i/60)"
+            sleep 1
+          done
+          
+          # If we get here, API failed to start
+          echo "API failed to start within 60 seconds. Showing logs:"
+          cat api.log
+          exit 1
+
+      # 9. Run Performance Tests
+      - name: Run Performance Tests
+        run: dotnet run --project tests/SmartHome.PerformanceTests/SmartHome.PerformanceTests.csproj --configuration Release
