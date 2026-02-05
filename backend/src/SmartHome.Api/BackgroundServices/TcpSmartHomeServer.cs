@@ -116,10 +116,6 @@ public class TcpSmartHomeServer : BackgroundService
                 sb.AppendLine($"--- Devices for User {currentUserId} ---");
                 foreach (var d in devices)
                 {
-                    // Assuming GetAllDevices returns DTOs or Entities
-                    // Ideally we should use pattern matching on types or DTO properties
-                    // Adjust properties based on your exact DTO/Entity definition
-
                     string status = "[DEVICE]";
 
                     // Simple logic to detect status based on dynamic check or DTO properties
@@ -141,12 +137,6 @@ public class TcpSmartHomeServer : BackgroundService
 
                 try
                 {
-                    // Try to turn ON; if already ON, turn OFF (simple toggle logic)
-                    // Note: Since service methods are void, we need to handle exceptions or check state first.
-                    // For simplicity in TCP, we just try TurnOn, if it fails logic (e.g. is already on?), we might try TurnOff.
-                    // But usually, user knows what they want. Let's assume we want to "Switch State".
-                    // Since your Interface has TurnOn/TurnOff as void, we can't easily check state without Getting first.
-
                     var device = await deviceService.GetDeviceByIdAsync(id, currentUserId.Value);
                     if (device == null) return ("Device not found.", null);
 

@@ -20,13 +20,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Serilog conf.
 builder.Host.UseSerilog((context, configuration) =>
-{
     configuration
-        // download logs level settings (warning/info) from appsettings.json
-        .ReadFrom.Configuration(context.Configuration)
-        .WriteTo.Console()
-        .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day);
-});
+    // download logs level settings (warning/info) from appsettings.json
+    .ReadFrom.Configuration(context.Configuration)
+);
 
 // SERVICES SECTION (DI Container)
 // register dependencies and tools
