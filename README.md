@@ -1,272 +1,243 @@
-<<<<<<< HEAD
-# Smart Home Simulator
+# Smart Home Simulator | IoT Management Platform
 
-> Fullstackowa platforma symulacji IoT (Internet of Things)
+![Project Status](https://img.shields.io/badge/status-active-success.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 
-## O Projekcie
-
-**Smart Home Simulator** to aplikacja umożliwiająca zarządzanie inteligentnym domem. System pozwala użytkownikowi na dodawanie urządzeń, organizację ich w pokoje oraz monitorowanie stanu w czasie rzeczywistym.
-
-Główne funkcjonalności:
-* **Zarządzanie urządzeniami:** Dodawanie/usuwanie/edytowanie żarówek i czujników, sterowanie zasilaniem.
-* **Symulacja danych:** Czujniki temperatury odbierają dane z symulatora przez protokół **MQTT**.
-* **Real-time Monitoring:** Dashboard reaguje natychmiastowo na zmiany dzięki **WebSockets (SignalR)**.
-* **Logi Serwisowe:** Historia napraw i konserwacji dla każdego urządzenia.
-* **Organizacja:** Grupowanie urządzeń w Pokoje (Rooms).
+> **Smart Home Simulator** is a fullstack IoT (Internet of Things) simulation platform for managing smart home devices. It provides real-time monitoring, device control, and comprehensive service history tracking through a modern web interface.
 
 ---
 
-## Technologie
+## Key Features
 
-### Backend (API & Services)
-C#, ASP.NET Core 10 Web API, Entity Framework Core 10, SQLite, MQTTnet, Serilog
+### For Users
 
-### Frontend (Client)
-React, TypeScript, Vite, Tailwind CSS, SignalR
+- **Secure Authentication:** Register/Login with HttpOnly cookies, BCrypt password hashing, and session persistence.
+- **Device Management:** Add, rename, toggle, and delete smart devices (Light Bulbs, Temperature Sensors).
+- **Room Organization:** Group devices into rooms for better organization and bulk operations.
+- **Real-time Monitoring:** Live temperature updates via MQTT protocol and instant UI refresh through WebSockets.
+- **Service History:** Maintain detailed maintenance logs for each device with full CRUD operations.
+- **Live Search:** Filter devices instantly with pattern-based searching.
 
----
+### Technical Highlights (Under the Hood)
 
-## Raport Realizacji Wymagań (Kryteria Oceniania)
+- **Multi-Protocol Communication:**
+  - **MQTT:** IoT simulator publishes temperature data to a broker; backend `MqttListenerService` subscribes and updates the database.
+  - **WebSockets (SignalR):** Bidirectional real-time communication for instant UI updates (`RefreshDevices`, `ReceiveTemperature` events).
+  - **TCP Socket Server:** Alternative raw text command interface on port `9000` (supports `LOGIN`, `LIST`, `TOGGLE` commands).
 
-Poniżej znajduje się szczegółowe zestawienie zaimplementowanych funkcjonalności w odniesieniu do punktacji projektu.
-
-### 1. HTTP (REST API) - 6 pkt
-
-Aplikacja realizuje pełny CRUD na 4 różnych zasobach.
-
-#### 🟢 Zasoby i Endpointy (CRUD):
-| Zasób | Metoda | Endpoint | Opis |
-| :--- | :--- | :--- | :--- |
-| **Devices** | `POST` | `/api/devices/lightbulb` | Dodanie urządzenia |
-| | `GET` | `/api/devices` | Pobranie listy (z filtrowaniem) |
-| | `PUT` | `/api/devices/{id}/turn-on` | Zmiana stanu (włącz/wyłącz) |
-| | `DELETE` | `/api/devices/{id}` | Usunięcie urządzenia |
-| **Users** | `POST` | `/api/users/register` | Rejestracja użytkownika |
-| | `GET` | `/api/users/me` | Pobranie aktualnego użytkownika z ciasteczek |
-| | `PUT` | `/api/users/{id}` | Aktualizacja danych/hasła |
-| | `DELETE` | `/api/users/{id}` | Usunięcie konta |
-| **Rooms** | `POST` | `/api/rooms` | Utworzenie pokoju |
-| | `GET` | `/api/rooms` | Pobranie pokoi użytkownika |
-| | `PUT` | `/api/rooms/{id}` | Zmiana nazwy pokoju |
-| | `DELETE` | `/api/rooms/{id}` | Usunięcie pokoju |
-| **Logs** | `POST` | `/api/logs` | Dodanie wpisu serwisowego |
-| | `GET` | `/api/logs/{deviceId}` | Pobranie historii napraw |
-| | `PUT` | `/api/logs/{id}` | Edycja wpisu |
-| | `DELETE` | `/api/logs/{id}` | Usunięcie wpisu |
-
-#### 🟢 Dodatkowe wymagania HTTP:
-* [x] **Wyszukiwanie wg wzorca:** Parametr `?search=query` w `GET /api/devices`. Filtrowanie po stronie bazy danych (`LIKE`).
-* [x] **Logowanie/Wylogowanie (Auth):** Oparte na **ciasteczkach HttpOnly**. Weryfikacja sesji w każdym requeście (`GetCurrentUserId()`).
-* [x] **Klient SPA:** Aplikacja React obsługująca wszystkie powyższe endpointy.
-
-### 2. Protokoły: MQTT, WS, SSE - 6 pkt
-
-* [x] **Backend MQTT (3 pkt):**
-    * **Biblioteka:** `MQTTnet`.
-    * **Implementacja:** `MqttListenerService` działający jako `BackgroundService`.
-    * **Działanie:** Nasłuchuje na temat `smarthome/devices/+/temp`, parsuje JSON i aktualizuje stan w bazie danych.
-    * **Symulator:** Dodatkowa aplikacja konsolowa publikująca losowe odczyty co 5 sekund.
-* [x] **Frontend WebSockets (3 pkt):**
-    * **Technologia:** SignalR (`@microsoft/signalr`).
-    * **Hub:** `SmartHomeHub`.
-    * **Działanie:** Dwukierunkowa komunikacja. Serwer wysyła zdarzenia `RefreshDevices` oraz `ReceiveTemperature`, frontend automatycznie odświeża widok bez przeładowania strony.
-
-### 3. Inne Funkcjonalności - 6 pkt
-
-W projekcie zaimplementowano 6 dodatkowych, zaawansowanych mechanizmów:
-
-1.  **TCP Socket Server:**
-    * Alternatywny interfejs sterowania. Nasłuchuje na porcie `9000`.
-    * Obsługuje surowe komendy tekstowe: `LOGIN`, `LIST`, `TOGGLE`.
-    * Implementacja: `TcpSmartHomeServer.cs`.
-2.  **Bezpieczeństwo (Cookies):**
-    * Wykorzystanie ciasteczek z flagami `HttpOnly`, `Secure`, `SameSite=Strict`.
-    * TTL ustawione na 7 dni.
-3.  **Baza Danych (EF Core & SQLite):**
-    * Zastosowanie wzorca **TPH (Table Per Hierarchy)** do dziedziczenia urządzeń (`Device` -> `LightBulb`, `Sensor`).
-    * Unikalne indeksy na email użytkownika.
-4.  **Szyfrowanie Haseł:**
-    * Wykorzystanie algorytmu **BCrypt** (`BCrypt.Net-Next`).
-    * Hashowanie przy rejestracji, bezpieczna weryfikacja przy logowaniu.
-5.  **Logowanie Zdarzeń (Logging):**
-    * Integracja z **Serilog**.
-    * Zapis logów aplikacyjnych do plików tekstowych w folderze `/logs` (rotacja dzienna).
-6.  **Czysta Architektura (Clean Architecture):**
-    * Pełna separacja warstw: `Domain` (Core), `Infrastructure` (DB/Repositories), `Api` (Controllers).
-    * Zastosowanie **Dependency Injection** (DI Container).
-
-### 4. Aplikacja - 2 pkt
-
-* [x] **Jakość kodu:** TypeScript na frontendzie, C# na backendzie.
-* [x] **Obsługa błędów:** Bloki `try-catch` w kontrolerach, globalne powiadomienia o błędach na frontendzie (`showError`).
-* [x] **Responsywność:** UI wykonany w **Tailwind CSS v4**, w pełni responsywny (Mobile/Desktop).
+- **Clean Architecture:** Full separation of concerns with `Domain`, `Infrastructure`, and `Api` layers following SOLID principles.
+- **Entity Framework Core:** TPH (Table Per Hierarchy) inheritance pattern for device polymorphism (`Device` → `LightBulb`, `TemperatureSensor`).
+- **Background Services:** `BackgroundService` implementations for MQTT listener and TCP server running concurrently with the API.
+- **Comprehensive Testing:** Unit tests (xUnit + Moq), Integration tests, BDD tests (Reqnroll/Gherkin), and Performance tests (NBomber) with >80% code coverage.
+- **CI/CD Pipeline:** GitHub Actions workflow for automated testing on every push/PR.
 
 ---
 
-## Uruchomienie (każdy proces w 3 oddzielnych terminalach)
-### Backend
-Wymagane: .NET SDK
-```bash
-cd smart-home-simulator/backend/src/SmartHome.Api
-dotnet restore
-dotnet run
-```
-Serwer API ruszy na https://localhost:5187.
+## Tech Stack
 
-### Frontend
-Wymagane: Node.js
-```bash
-cd smart-home-simulator/frontend
-npm install
-npm run dev
-```
-Aplikacja dostępna pod http://localhost:5173.
+**Backend:**
 
-### Symulator MQTT (Opcjonalnie)
-```bash
-cd smart-home-simulator/backend/src/SmartHome.Simulator
-dotnet run
-```
-Publikuje temperaturę termometrów.
+- ![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white) **ASP.NET Core 10 Web API**
+- ![EF Core](https://img.shields.io/badge/EF_Core-10-512BD4?logo=dotnet&logoColor=white) **Entity Framework Core** (SQLite)
+- ![MQTT](https://img.shields.io/badge/MQTT-MQTTnet-660066) **MQTTnet** (IoT Communication)
+- ![SignalR](https://img.shields.io/badge/SignalR-WebSockets-512BD4) **SignalR** (Real-time Hub)
+- ![Serilog](https://img.shields.io/badge/Serilog-Logging-red) **Serilog** (Structured Logging)
 
-## TCP Sever (do tego musi być włączony Backend)
-pobierz aplikację putty
-- W HostName (or IP address) wpisz localhost lub 127.0.0.1
-- Ustaw Port na 9000,
-- Connection Type ustaw na Raw,
-- Naciśnij Open.
-=======
-# Smart Home Simulator - Testy
+**Frontend:**
 
-### Autor: Jakub Jurkian
+- ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) **React 18** (Vite)
+- ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white) **TypeScript**
+- ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-4.0-06B6D4?logo=tailwindcss&logoColor=white) **Tailwind CSS v4**
+- ![SignalR](https://img.shields.io/badge/@microsoft/signalr-Client-512BD4) **SignalR Client**
 
-### Grupa: 2
+**Testing & DevOps:**
+
+- ![xUnit](https://img.shields.io/badge/xUnit-Testing-5C2D91) **xUnit + Moq** (Unit Tests)
+- ![Reqnroll](https://img.shields.io/badge/Reqnroll-BDD-green) **Reqnroll** (BDD/Gherkin)
+- ![NBomber](https://img.shields.io/badge/NBomber-Performance-orange) **NBomber** (Load Testing)
+- ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=githubactions&logoColor=white) **GitHub Actions**
 
 ---
 
-## Opis projektu
+## Project Architecture
 
-Projekt Smart Home Simulator to kompleksowy system zarządzania inteligentnym domem z interfejsem webowym.
-Obejmuje backend w .NET, frontend w React/TypeScript oraz komunikację MQTT.
-System posiada logikę użytkownika oraz umożliwia zarządzanie urządzeniami, pomieszczeniami i logami konserwacji.
+The project follows **Clean Architecture** principles with a modular, scalable structure.
+
+```bash
+smart-home-simulator/
+├── backend/
+│   └── src/
+│       ├── SmartHome.Api/             # Controllers, Hubs, DTOs, Background Services
+│       │   ├── Controllers/           # REST API endpoints
+│       │   ├── Hubs/                  # SignalR WebSocket hub
+│       │   ├── BackgroundServices/    # MQTT Listener, TCP Server
+│       │   └── Dtos/                  # Data Transfer Objects
+│       ├── SmartHome.Domain/          # Core business logic & entities
+│       │   ├── Entities/              # Device, Room, User, MaintenanceLog
+│       │   └── Interfaces/            # Service & Repository contracts
+│       ├── SmartHome.Infrastructure/  # Data access & external services
+│       │   ├── Persistence/           # EF Core DbContext
+│       │   ├── Repositories/          # Data access implementations
+│       │   └── Services/              # Business logic implementations
+│       └── SmartHome.Simulator/       # IoT MQTT Publisher (Console App)
+├── frontend/
+│   └── src/
+│       ├── components/                # Reusable UI components
+│       │   ├── auth/                  # AuthForm
+│       │   ├── devices/               # DeviceCard, DeviceForm
+│       │   ├── rooms/                 # RoomManager
+│       │   ├── modals/                # MaintenanceModal
+│       │   └── user/                  # UserProfile
+│       ├── services/                  # API client wrapper
+│       └── types.ts                   # TypeScript interfaces
+├── tests/
+│   ├── SmartHome.UnitTests/           # Unit tests with Moq
+│   ├── SmartHome.IntegrationTests/    # API integration tests
+│   ├── SmartHome.BDDTests/            # Gherkin/Reqnroll scenarios
+│   └── SmartHome.PerformanceTests/    # NBomber load tests
+└── .github/
+    └── workflows/                     # CI/CD pipeline
+```
+
+## API Endpoints
+
+### Devices
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/devices/lightbulb` | Create a new light bulb |
+| **POST** | `/api/devices/temperaturesensor` | Create a new sensor |
+| **GET** | `/api/devices?search=query` | List devices (with filtering) |
+| **PUT** | `/api/devices/{id}/turn-on` | Toggle device state |
+| **DELETE** | `/api/devices/{id}` | Delete a device |
+
+### Rooms
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/rooms` | Create a room |
+| **GET** | `/api/rooms` | List user's rooms |
+| **PUT** | `/api/rooms/{id}` | Rename a room |
+| **DELETE** | `/api/rooms/{id}` | Delete room (cascades to devices) |
+
+### Users
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/users/register` | Register new user |
+| **POST** | `/api/users/login` | Login (sets HttpOnly cookie) |
+| **GET** | `/api/users/me` | Get current session |
+| **DELETE** | `/api/users/{id}` | Delete account |
+
+### Logs
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **POST** | `/api/logs` | Add maintenance entry |
+| **GET** | `/api/logs/{deviceId}` | Get device service history |
+| **PUT** | `/api/logs/{id}` | Update log entry |
+| **DELETE** | `/api/logs/{id}` | Delete log entry |
 
 ---
 
-## ✅ Spełnione wymagania projektowe
+## Getting Started
 
-### 1. Minimalny zakres funkcjonalny aplikacji
+### Prerequisites
 
-| Wymaganie | Status | Lokalizacja | Opis |
-|-----------|--------|-------------|------|
-| **Co najmniej 6 funkcjonalności z logiką warunkową i walidacją** | ✅ | `backend/src/SmartHome.Domain/`, `MqttListenerService.cs`, `backend/src/SmartHome.Infrastructure/` | Zarządzanie urządzeniami, pomieszczeniami, użytkownikami, logami konserwacji, automatyzacjami, komunikacja MQTT |
-| **Co najmniej 3 klasy współpracujące** | ✅ | `backend/src/SmartHome.Domain/Entities/` | Device, Room, User, MaintenanceLog, Automation - encje współpracujące przez serwisy aplikacyjne |
-| **Funkcjonalność z historią/rejestrem danych** | ✅ | `backend/src/SmartHome.Domain/Entities/MaintenanceLog.cs` | Rejestr logów konserwacji urządzeń |
-| **Funkcjonalność zależna od danych użytkownika** | ✅ | `backend/src/SmartHome.Infrastructure/Services/` | Walidacja uprawnień, autoryzacja operacji na podstawie roli użytkownika |
-| **API z pełnym CRUD** | ✅ | `src/SmartHome.Api/Controllers/` | DevicesController, RoomsController, UsersController, MaintenanceLogsController |
-| **Funkcjonalność zewnętrzna do mockowania** | ✅ | `src/SmartHome.Infrastructure/` | baza danych przez Entity Framework |
+* .NET SDK 10 (or higher)
+* Node.js (v18 or higher)
+* npm or yarn
 
-### 2. Wymagania techniczne
+### Installation
 
-| Wymaganie | Status | Lokalizacja | Opis |
-|-----------|--------|-------------|------|
-| **Kod oddzielony od testów** | ✅ | `tests/` | Struktura katalogów rozdzielająca kod od testów |
-| **Sensowna struktura i nazewnictwo** | ✅ | Cały projekt | Architektura Clean Architecture z podziałem na Domain, Application, Infrastructure, Api |
-| **Dobre praktyki (SOLID, DRY)** | ✅ | `backend/src` | Dependency Injection, separacja warstw, interfejsy dla serwisów |
+**1. Clone the repository**
 
-### 3. Wymagania dotyczące testów
+    git clone https://github.com/JakubJurkian/smart-home-simulator.git
+    cd smart-home-simulator
 
-| Typ testów | Status | Lokalizacja | Opis |
-|------------|--------|-------------|------|
-| **Testy jednostkowe** | ✅ | `tests/SmartHome.UnitTests/` | Testy logiki biznesowej z użyciem mocków |
-| **Testy API (integracyjne)** | ✅ | `tests/SmartHome.IntegrationTests/` | Testy endpointów HTTP |
-| **Testy BDD** | ✅ | `tests/SmartHome.BDDTests/` | Scenariusze Gherkin z użyciem Reqnroll |
-| **Testy wydajnościowe** | ✅ | `tests/SmartHome.PerformanceTests/` | Testy obciążeniowe endpointów |
-| **Code coverage >80%** | ✅ | `coveragereport/` | Raport pokrycia generowany przez Coverlet i ReportGenerator |
+**2. Start the Backend API**
 
-### 4. CI/CD Pipeline
+    cd backend/src/SmartHome.Api
+    dotnet restore
+    dotnet run
 
-| Wymaganie | Status | Lokalizacja | Opis |
-|-----------|--------|-------------|------|
-| **Pipeline CI** | ✅ | `.github/workflows/` | GitHub Actions uruchamiany przy push/PR do main |
-| **Zielone pipeline'y dla wszystkich typów testów** | ✅ | GitHub Actions | Automatyczne uruchamianie wszystkich testów |
+> API will be available at `http://localhost:5187`
 
----
+**3. Start the Frontend** (New terminal)
 
-## Technologie
+    cd frontend
+    npm install
+    npm run dev
 
-- **Backend:** .NET 10, ASP.NET Core Web API
-- **Frontend:** React, TypeScript
-- **Baza danych:** Entity Framework Core
-- **Komunikacja IoT:** MQTT
-- **Testy jednostkowe:** xUnit, Moq
-- **Testy BDD:** Reqnroll (Gherkin)
-- **Testy wydajnościowe:** NBomber
-- **CI/CD:** GitHub Actions
-- **Code Coverage:** Coverlet, ReportGenerator
+> App will be available at `http://localhost:5173`
+
+**4. Start the IoT Simulator** (Optional, new terminal)
+Publishes random temperature readings every 5 seconds.
+
+    cd backend/src/SmartHome.Simulator
+    dotnet run
+
+### TCP Server (Alternative Interface)
+
+With the backend running, connect via PuTTY or any raw TCP client:
+
+* **Host:** `localhost` or `127.0.0.1`
+* **Port:** `9000`
+* **Connection Type:** Raw
+
+**Available commands:** `LOGIN <email> <password>`, `LIST`, `TOGGLE <deviceId>`
 
 ---
 
-## Uruchomienie aplikacji
+## Running Tests
 
-```bash
-cd backend/src/SmartHome.Api; dotnet run
-```
-w drugim terminalu frontend
-```bash
-cd frontend; npm run dev
-```
+**All tests**
 
-## Uruchomienie testów
+    dotnet test
 
-### Testy jednostkowe
+**Unit tests only**
 
-```bash
-dotnet test tests/SmartHome.UnitTests/SmartHome.UnitTests.csproj
-```
+    dotnet test SmartHome.UnitTests.csproj
 
-### Testy integracyjne (API)
+**Integration tests**
 
-```bash
-dotnet test tests/SmartHome.IntegrationTests/SmartHome.IntegrationTests.csproj
-```
+    dotnet test SmartHome.IntegrationTests.csproj
 
-### Testy BDD (Reqnroll)
+**BDD tests**
 
-```bash
-dotnet test tests/SmartHome.BDDTests/SmartHome.BDDTests.csproj
-```
+    dotnet test SmartHome.BDDTests.csproj
 
-### Testy wydajnościowe
+**Performance tests**
 
-```bash
-dotnet run --project tests/SmartHome.PerformanceTests/SmartHome.PerformanceTests.csproj
-```
+    dotnet run --project SmartHome.PerformanceTests.csproj
 
-### Wszystkie testy
+### Code Coverage Report
 
-```bash
-dotnet test
-```
+    dotnet test --collect:"XPlat Code Coverage"
 
-### Raport pokrycia kodu (Code Coverage)
+    reportgenerator \
+      -reports:"**/coverage.cobertura.xml" \
+      -targetdir:"coveragereport" \
+      -reporttypes:Html
 
-```bash
-dotnet test --collect:"XPlat Code Coverage"
-
-reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html -classfilters:"-SmartHome.Api.BackgroundServices.TcpSmartHomeServer;-SmartHome.Infrastructure.Migrations.*"
-```
-
-Po uruchomieniu raport dostępny w: `coveragereport/index.html`
+> Report available at: `index.html`
 
 ---
 
-## Pipeline CI/CD
+## Best Practices Implemented
 
-Pipeline GitHub Actions uruchamia się automatycznie przy każdym push i pull request do gałęzi `main`.
+* **Clean Architecture:** Strict separation between `Domain` (business rules), `Infrastructure` (data access), and `Api` (presentation) layers.
+* **Dependency Injection:** All services and repositories registered in DI container for testability and loose coupling.
+* **Repository Pattern:** Abstracts data access behind interfaces, enabling easy mocking in tests.
+* **TPH Inheritance:** Entity Framework's Table Per Hierarchy for polymorphic device types without complex joins.
+* **Background Services:** Long-running MQTT and TCP listeners implemented as hosted services with proper cancellation token handling.
+* **Secure Authentication:** HttpOnly cookies with `Secure`, `SameSite=Strict` flags and BCrypt password hashing.
+* **Comprehensive Logging:** Serilog with daily file rotation for production debugging.
+* **Responsive UI:** Mobile-first design with Tailwind CSS breakpoints.
 
-### Ręczne uruchomienie pipeline
+## License
 
-1. Przejdź do zakładki **Actions** w repozytorium GitHub
-2. Wybierz workflow **".NET CI"**
-3. Kliknij **Run Workflow**
->>>>>>> smartHomeTests/main
+Distributed under the [MIT License](LICENSE). See `LICENSE` for more information.
