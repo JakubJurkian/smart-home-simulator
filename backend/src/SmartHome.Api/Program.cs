@@ -1,7 +1,7 @@
-using SmartHome.Domain.Interfaces.Device;
-using SmartHome.Domain.Interfaces.User;
-using SmartHome.Domain.Interfaces.Room;
-using SmartHome.Domain.Interfaces.MaintenanceLog;
+using SmartHome.Domain.Interfaces.Devices;
+using SmartHome.Domain.Interfaces.Users;
+using SmartHome.Domain.Interfaces.Rooms;
+using SmartHome.Domain.Interfaces.MaintenanceLogs;
 
 using SmartHome.Infrastructure.Persistence;
 

@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Moq;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.MaintenanceLogs;
 using SmartHome.Infrastructure.Services;
 
 namespace SmartHome.UnitTests.Services;

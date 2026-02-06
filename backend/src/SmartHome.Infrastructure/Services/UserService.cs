@@ -1,5 +1,5 @@
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces.User;
+using SmartHome.Domain.Interfaces.Users;
 
 namespace SmartHome.Infrastructure.Services;
 

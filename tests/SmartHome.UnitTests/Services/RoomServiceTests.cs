@@ -1,8 +1,7 @@
-using FluentAssertions; // allows to write english-like code
-using Moq; // creates repositories mocks (objects) to not connect with real db
-
+using FluentAssertions;
+using Moq;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Rooms;
 using SmartHome.Infrastructure.Services;
 
 namespace SmartHome.UnitTests.Services;
@@ -11,75 +10,95 @@ public class RoomServiceTests
 {
     // mocking dependencies
     private readonly Mock<IRoomRepository> _roomRepoMock;
-    private readonly Mock<IDeviceRepository> _deviceRepoMock;
 
     // system under test (sut)
     private readonly RoomService _roomService;
 
     public RoomServiceTests()
     {
-        _roomRepoMock = new Mock<IRoomRepository>(); // dynamic proxy (object that mocks other object)
-        _deviceRepoMock = new Mock<IDeviceRepository>();
-        // this way, cause for every test ([fact]) xUnit creates
-        // new instance of RoomServiceTests class
+        _roomRepoMock = new Mock<IRoomRepository>();
 
-        // inject fake repo to real service
-        _roomService = new RoomService(_roomRepoMock.Object, _deviceRepoMock.Object);
+        _roomService = new RoomService(_roomRepoMock.Object);
     }
 
-    [Fact] // defines method below as a TEST.
-    // check if Add method was called in repo ONCE
-    // and check if Room obj has valid name & userId
-    public void AddRoom_ShouldCallRepository_WhenNameIsValid()
+    [Fact]
+    public async Task AddRoomAsync_ShouldCallRepository_WhenNameIsValid()
     {
         // ARRANGE
         var userId = Guid.NewGuid();
         var roomName = "Kitchen";
 
+        _roomRepoMock.Setup(r => r.RoomNameExistsAsync(roomName, userId))
+                     .ReturnsAsync(false);
+
+        _roomRepoMock.Setup(r => r.AddAsync(It.IsAny<Room>()))
+                     .Returns(Task.CompletedTask);
+
         // ACT
-        _roomService.AddRoom(userId, roomName);
+        await _roomService.AddRoomAsync(roomName, userId);
 
         // ASSERT
-        _roomRepoMock.Verify(repo => repo.Add(It.Is<Room>(r =>
+        _roomRepoMock.Verify(repo => repo.AddAsync(It.Is<Room>(r =>
             r.Name == roomName &&
             r.UserId == userId
         )), Times.Once);
-        // side-effects & communcation contract is checked
     }
 
     [Fact]
-    public void DeleteRoom_ShouldDeleteDevicesFirst_ThenDeleteRoom()
+    public async Task DeleteRoomAsync_ShouldDeleteRoom_WhenRoomExistsAndBelongsToUser()
     {
+        // ARRANGE
         var roomId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        
+        var existingRoom = new Room { Id = roomId, UserId = userId, Name = "Test Room" };
 
-        _roomService.DeleteRoom(roomId);
+        _roomRepoMock.Setup(r => r.GetByIdAsync(roomId))
+                     .ReturnsAsync(existingRoom);
 
-        _deviceRepoMock.Verify(repo => repo.DeleteAllByRoomId(roomId), Times.Once);
-        _roomRepoMock.Verify(repo => repo.Delete(roomId), Times.Once);
+        _roomRepoMock.Setup(r => r.DeleteAsync(It.IsAny<Room>()))
+                     .Returns(Task.CompletedTask);
+
+        // ACT
+        var result = await _roomService.DeleteRoomAsync(roomId, userId);
+
+        // ASSERT
+        result.Should().BeTrue();
+        _roomRepoMock.Verify(repo => repo.DeleteAsync(It.Is<Room>(r => r.Id == roomId)), Times.Once);
     }
 
     [Fact]
-    public void RenameRoom_ShouldUpdateName_WhenRoomExists()
+    public async Task RenameRoomAsync_ShouldUpdateName_WhenRoomExists()
     {
+        // Arrange
         var roomId = Guid.NewGuid();
-        var oldRoom = new Room { Id = roomId, Name = "OldName" };
+        var userId = Guid.NewGuid();
+        var oldRoom = new Room { Id = roomId, Name = "OldName", UserId = userId };
 
-        // we teach mock: if ask for that room, return this room
-        _roomRepoMock.Setup(repo => repo.GetById(roomId)).Returns(oldRoom);
+        // Mock GetById (Ownership check)
+        _roomRepoMock.Setup(repo => repo.GetByIdAsync(roomId)).ReturnsAsync(oldRoom);
+        
+        _roomRepoMock.Setup(repo => repo.RoomNameExistsAsync(It.IsAny<string>(), userId))
+                     .ReturnsAsync(false);
+        
+        _roomRepoMock.Setup(repo => repo.UpdateAsync(It.IsAny<Room>())).Returns(Task.CompletedTask);
 
         var newName = "kitchen";
-        _roomService.RenameRoom(roomId, newName);
 
-        // check if update method has the room with changed name
-        _roomRepoMock.Verify(repo => repo.Update(It.Is<Room>(r =>
-        r.Id == roomId &&
-        r.Name == newName
+        // Act
+        await _roomService.RenameRoomAsync(roomId, newName, userId);
+
+        // Assert
+        _roomRepoMock.Verify(repo => repo.UpdateAsync(It.Is<Room>(r =>
+            r.Id == roomId &&
+            r.Name == newName
         )), Times.Once);
     }
 
     [Fact]
-    public void GetUserRooms_ShouldReturnList_WhenRoomsExist()
+    public async Task GetAllAsync_ShouldReturnList_WhenRoomsExist()
     {
+        // Arrange
         var userId = Guid.NewGuid();
         var rooms = new List<Room>
         {
@@ -87,13 +106,32 @@ public class RoomServiceTests
             new() { UserId = userId, Name = "Bedroom" },
         };
 
-        // we teach mock: if asked for the user's rooms, return this list
-        _roomRepoMock.Setup(repo => repo.GetAllByUserId(userId)).Returns(rooms);
+        _roomRepoMock.Setup(repo => repo.GetAllByUserIdAsync(userId)).ReturnsAsync(rooms);
 
-        var result = _roomService.GetUserRooms(userId);
+        // Act
+        var result = await _roomService.GetAllAsync(userId);
 
+        // Assert
         result.Should().NotBeNull();
         result.Should().HaveCount(2);
         result.Should().Contain(r => r.Name == "Kitchen");
+    }
+
+    [Fact]
+    public async Task RenameRoomAsync_ShouldReturnFalse_WhenRoomNotFound()
+    {
+
+        // Arrange
+        var roomId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        _roomRepoMock.Setup(repo => repo.GetByIdAsync(roomId)).ReturnsAsync((Room?)null);
+
+        // Act
+        var result = await _roomService.RenameRoomAsync(roomId, "NewName", userId);
+
+        // Assert
+        result.Should().BeFalse(); // Service returns false, doesn't throw
+        _roomRepoMock.Verify(repo => repo.UpdateAsync(It.IsAny<Room>()), Times.Never);
     }
 }

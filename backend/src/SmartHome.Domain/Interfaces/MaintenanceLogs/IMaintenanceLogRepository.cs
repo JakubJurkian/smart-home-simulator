@@ -1,4 +1,4 @@
-namespace SmartHome.Domain.Interfaces.MaintenanceLog;
+namespace SmartHome.Domain.Interfaces.MaintenanceLogs;
 using SmartHome.Domain.Entities;
 
 public interface IMaintenanceLogRepository

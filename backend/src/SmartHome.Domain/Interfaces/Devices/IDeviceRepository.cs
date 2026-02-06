@@ -1,4 +1,4 @@
-namespace SmartHome.Domain.Interfaces.Device;
+namespace SmartHome.Domain.Interfaces.Devices;
 
 using SmartHome.Domain.Entities;
 

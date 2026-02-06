@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.Devices;
 using SmartHome.Domain.Entities;
 using SmartHome.Api.Dtos;
 

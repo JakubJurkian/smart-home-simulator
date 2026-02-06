@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Api.Dtos;
-using SmartHome.Domain.Interfaces.User;
+using SmartHome.Domain.Interfaces.Users;
 
 namespace SmartHome.Api.Controllers;
 

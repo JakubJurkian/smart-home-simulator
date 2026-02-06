@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces.User;
-using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.Users;
+using SmartHome.Domain.Interfaces.Devices;
 
 namespace SmartHome.Api.BackgroundServices;
 

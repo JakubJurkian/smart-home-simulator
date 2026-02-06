@@ -1,5 +1,5 @@
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces.MaintenanceLog;
+using SmartHome.Domain.Interfaces.MaintenanceLogs;
 
 namespace SmartHome.Infrastructure.Services;
 

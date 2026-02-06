@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces.User;
+using SmartHome.Domain.Interfaces.Users;
 using SmartHome.Infrastructure.Persistence;
 
 namespace SmartHome.Infrastructure.Repositories;

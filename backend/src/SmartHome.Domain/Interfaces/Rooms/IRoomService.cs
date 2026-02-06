@@ -1,4 +1,4 @@
-namespace SmartHome.Domain.Interfaces.Room;
+namespace SmartHome.Domain.Interfaces.Rooms;
 
 using SmartHome.Domain.Entities;
 

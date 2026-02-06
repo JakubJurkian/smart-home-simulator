@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using SmartHome.Api.Hubs;
-using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.Devices;
 
 namespace SmartHome.Api.Services;
 

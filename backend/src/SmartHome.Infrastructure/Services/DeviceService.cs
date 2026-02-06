@@ -1,5 +1,5 @@
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.Devices;
 
 namespace SmartHome.Infrastructure.Services;
 
@@ -18,6 +18,11 @@ public class DeviceService(IDeviceRepository repository, IDeviceNotifier notifie
 
     public async Task<Guid> AddLightBulbAsync(string name, Guid roomId, Guid userId)
     {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Device name cannot be empty.", nameof(name));
+        }
+
         var bulb = new LightBulb(name, roomId) { UserId = userId };
         await repository.AddAsync(bulb);
         _ = notifier.NotifyDeviceChanged();

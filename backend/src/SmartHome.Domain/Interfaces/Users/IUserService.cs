@@ -1,4 +1,4 @@
-namespace SmartHome.Domain.Interfaces.User;
+namespace SmartHome.Domain.Interfaces.Users;
 
 using SmartHome.Domain.Entities;
 

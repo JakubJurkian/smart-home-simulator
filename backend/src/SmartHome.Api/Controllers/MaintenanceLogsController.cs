@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Api.Dtos;
-using SmartHome.Domain.Interfaces.MaintenanceLog;
+using SmartHome.Domain.Interfaces.MaintenanceLogs;
 
 namespace SmartHome.Api.Controllers;
 
