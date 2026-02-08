@@ -95,7 +95,7 @@ public class UsersController(
             var currentUserId = GetCurrentUserId();
             if (currentUserId != id)
             {
-                return Forbid(); // 403 Forbidden
+                return StatusCode(403, new { message = "You are not allowed to modify this user." });
             }
 
             bool updated = await userService.UpdateUserAsync(id, request.Username, request.Password);
@@ -131,7 +131,7 @@ public class UsersController(
             var currentUserId = GetCurrentUserId();
             if (currentUserId != id)
             {
-                return Forbid();
+                return StatusCode(403, new { message = "You are not allowed to delete this user." });
             }
 
             bool deleted = await userService.DeleteUserAsync(id);

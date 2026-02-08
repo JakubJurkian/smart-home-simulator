@@ -16,12 +16,12 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         var email = $"servicer-{uniqueSuffix}@test.com";
 
         // Auth
-        await _client.PostAsJsonAsync("/api/users/register", new RegisterRequest("ServiceTech", email, "Pass123!"));
-        var loginResponse = await _client.PostAsJsonAsync("/api/users/login", new LoginRequest(email, "Pass123!"));
+        await _client.PostAsJsonAsync("/api/users/register", new RegisterRequest { Username = "ServiceTech", Email = email, Password = "Pass123!" });
+        var loginResponse = await _client.PostAsJsonAsync("/api/users/login", new LoginRequest { Email = email, Password = "Pass123!" });
         loginResponse.EnsureSuccessStatusCode();
 
         // Create Room
-        await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Bedroom"));
+        await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest { Name = "Bedroom" });
 
         // Get RoomId
         var roomsRes = await _client.GetAsync("/api/rooms");
@@ -29,22 +29,25 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         var roomId = rooms!.First(r => r.Name == "Bedroom").Id;
 
         // Create Device
-        var newDevice = new CreateDeviceRequest("Sensor 1", Guid.Parse(roomId), "TemperatureSensor");
-        await _client.PostAsJsonAsync("/api/devices", newDevice);
+        var newDevice = new CreateDeviceRequest { Name = "Sensor 1", RoomId = Guid.Parse(roomId), Type = "TemperatureSensor" };
+        var devResponse = await _client.PostAsJsonAsync("/api/devices/temperaturesensor", newDevice);
+        devResponse.EnsureSuccessStatusCode();
 
         // Get DeviceId
-        var devicesRes = await _client.GetAsync("/api/devices");
+        var devicesRes = await _client.GetAsync("/api/devices/all-system");
         var devices = await devicesRes.Content.ReadFromJsonAsync<List<TestDeviceDto>>();
         var deviceId = devices!.First(d => d.Name == "Sensor 1").Id;
 
         // Create Log
-        var newLog = new CreateLogRequest(Guid.Parse(deviceId), "Info", "Initial Log");
-        await _client.PostAsJsonAsync("/api/logs", newLog);
+        var newLog = new CreateLogRequest { DeviceId = Guid.Parse(deviceId), Title = "Info", Description = "Initial Log" };
+        var logRes = await _client.PostAsJsonAsync("/api/logs", newLog);
+        logRes.EnsureSuccessStatusCode();
 
         // Get LogId
         var logsRes = await _client.GetAsync($"/api/logs/{deviceId}");
         var logs = await logsRes.Content.ReadFromJsonAsync<List<TestLogDto>>();
-        var logId = logs!.First(l => l.Description == "Initial Log").Id;
+        
+        var logId = logs!.Last(l => l.Description == "Initial Log").Id;
 
         return (deviceId, logId);
     }
@@ -56,25 +59,25 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         var uniqueSuffix = Guid.NewGuid().ToString()[..8];
         var email = $"servicer-{uniqueSuffix}@test.com";
 
-        await _client.PostAsJsonAsync("/api/users/register", new RegisterRequest("ServiceTech", email, "Pass123!"));
-        var loginResponse = await _client.PostAsJsonAsync("/api/users/login", new LoginRequest(email, "Pass123!"));
+        await _client.PostAsJsonAsync("/api/users/register", new RegisterRequest { Username = "ServiceTech", Email = email, Password = "Pass123!" });
+        var loginResponse = await _client.PostAsJsonAsync("/api/users/login", new LoginRequest { Email = email, Password = "Pass123!" });
         loginResponse.EnsureSuccessStatusCode();
 
-        await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Bedroom"));
+        await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest { Name = "Bedroom" });
 
         var roomsRes = await _client.GetAsync("/api/rooms");
         var rooms = await roomsRes.Content.ReadFromJsonAsync<List<TestRoomDto>>();
         var roomId = rooms!.First(r => r.Name == "Bedroom").Id;
 
-        var newDevice = new CreateDeviceRequest("Sensor 1", Guid.Parse(roomId), "TemperatureSensor");
-        await _client.PostAsJsonAsync("/api/devices", newDevice);
+        var newDevice = new CreateDeviceRequest { Name = "Sensor 1", RoomId = Guid.Parse(roomId), Type = "TemperatureSensor" };
+        await _client.PostAsJsonAsync("/api/devices/temperaturesensor", newDevice);
 
-        var devicesRes = await _client.GetAsync("/api/devices");
+        var devicesRes = await _client.GetAsync("/api/devices/all-system");
         var devices = await devicesRes.Content.ReadFromJsonAsync<List<TestDeviceDto>>();
         var deviceId = devices!.First(d => d.Name == "Sensor 1").Id;
 
         // Act
-        var newLog = new CreateLogRequest(Guid.Parse(deviceId), "Info", "Routine Checkup");
+        var newLog = new CreateLogRequest { DeviceId = Guid.Parse(deviceId), Title = "Info", Description = "Routine Checkup" };
         var logResponse = await _client.PostAsJsonAsync("/api/logs", newLog);
 
         // Assert
@@ -94,7 +97,7 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
     {
         // Arrange
         var (deviceId, logId) = await SetupDeviceWithLogAsync();
-        var updateRequest = new UpdateLogRequest("Updated Title", "Updated Description");
+        var updateRequest = new UpdateLogRequest { Title = "Updated Title", Description = "Updated Description" };
 
         // Act
         var updateResponse = await _client.PutAsJsonAsync($"/api/logs/{logId}", updateRequest);
@@ -103,9 +106,13 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var logsRes = await _client.GetAsync($"/api/logs/{deviceId}");
-        var content = await logsRes.Content.ReadAsStringAsync();
-        content.Should().Contain("Updated Description");
-        content.Should().NotContain("Initial Log");
+        
+        var logs = await logsRes.Content.ReadFromJsonAsync<List<TestLogDto>>();
+        
+        var updatedLog = logs!.FirstOrDefault(l => l.Id == logId);
+        updatedLog.Should().NotBeNull();
+        updatedLog!.Description.Should().Be("Updated Description");
+        updatedLog!.Title.Should().Be("Updated Title");
     }
 
     [Fact]
@@ -114,7 +121,7 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         // Arrange
         await SetupDeviceWithLogAsync();
         var nonExistentLogId = Guid.NewGuid();
-        var updateRequest = new UpdateLogRequest("Title", "Description");
+        var updateRequest = new UpdateLogRequest { Title = "Title", Description = "Description" };
 
         // Act
         var updateResponse = await _client.PutAsJsonAsync($"/api/logs/{nonExistentLogId}", updateRequest);
@@ -140,8 +147,9 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var logsRes = await _client.GetAsync($"/api/logs/{deviceId}");
-        var content = await logsRes.Content.ReadAsStringAsync();
-        content.Should().NotContain("Initial Log");
+        
+        var logs = await logsRes.Content.ReadFromJsonAsync<List<TestLogDto>>();
+        logs.Should().NotContain(l => l.Id == logId);
     }
 
     [Fact]

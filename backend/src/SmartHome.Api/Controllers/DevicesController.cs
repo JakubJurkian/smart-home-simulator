@@ -171,15 +171,27 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
     [HttpPut("{id}")]
     public async Task<IActionResult> RenameDevice(Guid id, [FromBody] RenameDeviceRequest request)
     {
-        var userId = GetCurrentUserId();
-        var success = await service.RenameDeviceAsync(id, request.Name, userId);
-
-        if (success)
+        try
         {
-            return Ok(new { message = "Device name changed." });
-        }
+            var userId = GetCurrentUserId();
+            var success = await service.RenameDeviceAsync(id, request.Name, userId);
 
-        logger.LogWarning("Could not change device name.");
-        return BadRequest("Could not change device name.");
+            if (success)
+            {
+                return Ok(new { message = "Device name changed." });
+            }
+
+            logger.LogWarning("Could not change device name.");
+            return BadRequest("Could not change device name.");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new { message = "User not logged in." });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error renaming device");
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }
