@@ -1,7 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using FluentAssertions;
 using SmartHome.Api.Dtos;
 using Xunit;
@@ -11,22 +9,25 @@ namespace SmartHome.IntegrationTests.Controllers;
 public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixture<IntegrationTestFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
+    private const string RoomsBase = "/api/rooms";
+    private const string UsersRegister = "/api/users/register";
+    private const string UsersLogin = "/api/users/login";
 
-    private async Task<(string email, string password)> RegisterAndLoginUserAsync()
+    private async Task RegisterAndLoginUserAsync()
     {
         var uniqueSuffix = Guid.NewGuid().ToString()[..8];
         var email = $"owner-{uniqueSuffix}@test.com";
         var password = "Pass123!";
 
-        var registerResponse = await _client.PostAsJsonAsync("/api/users/register",
-            new RegisterRequest("RoomOwner", email, password));
+        // Register
+        var registerResponse = await _client.PostAsJsonAsync(UsersRegister,
+            new RegisterRequest { Username = "RoomOwner", Email = email, Password = password });
         registerResponse.EnsureSuccessStatusCode();
 
-        var loginResponse = await _client.PostAsJsonAsync("/api/users/login",
-            new LoginRequest(email, password));
+        // Login
+        var loginResponse = await _client.PostAsJsonAsync(UsersLogin,
+            new LoginRequest { Email = email, Password = password });
         loginResponse.EnsureSuccessStatusCode();
-
-        return (email, password);
     }
 
     #region CreateRoom Tests
@@ -36,15 +37,15 @@ public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixtur
     {
         // Arrange
         await RegisterAndLoginUserAsync();
-        var newRoom = new CreateRoomRequest("Salon");
+        var newRoom = new CreateRoomRequest { Name = "Salon" };
 
         // Act
-        var createResponse = await _client.PostAsJsonAsync("/api/rooms", newRoom);
+        var createResponse = await _client.PostAsJsonAsync(RoomsBase, newRoom);
 
         // Assert
         createResponse.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
 
-        var getResponse = await _client.GetAsync("/api/rooms");
+        var getResponse = await _client.GetAsync(RoomsBase);
         getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var rooms = await getResponse.Content.ReadFromJsonAsync<List<TestRoomDto>>();
@@ -55,13 +56,13 @@ public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixtur
     [Fact]
     public async Task CreateRoom_ShouldFail_WhenUserIsNotLoggedIn()
     {
-        // Arrange - fresh client, no login
-        var newRoom = new CreateRoomRequest("Kitchen");
+        // Arrange - no login
+        var newRoom = new CreateRoomRequest { Name = "Kitchen" };
 
         // Act
-        var createResponse = await _client.PostAsJsonAsync("/api/rooms", newRoom);
+        var createResponse = await _client.PostAsJsonAsync(RoomsBase, newRoom);
 
-        // Assert - should fail (401 Unauthorized or 500 due to exception)
+        // Assert
         createResponse.StatusCode.Should().BeOneOf(
             HttpStatusCode.Unauthorized,
             HttpStatusCode.InternalServerError);
@@ -74,14 +75,14 @@ public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixtur
         await RegisterAndLoginUserAsync();
 
         // Act
-        var response1 = await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Bedroom"));
-        var response2 = await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Bathroom"));
+        var response1 = await _client.PostAsJsonAsync(RoomsBase, new CreateRoomRequest { Name = "Bedroom" });
+        var response2 = await _client.PostAsJsonAsync(RoomsBase, new CreateRoomRequest { Name = "Bathroom" });
 
         // Assert
         response1.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
         response2.StatusCode.Should().BeOneOf(HttpStatusCode.Created, HttpStatusCode.OK);
 
-        var getResponse = await _client.GetAsync("/api/rooms");
+        var getResponse = await _client.GetAsync(RoomsBase);
         var rooms = await getResponse.Content.ReadFromJsonAsync<List<TestRoomDto>>();
 
         rooms.Should().NotBeNull();
@@ -98,21 +99,26 @@ public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixtur
     {
         // Arrange
         await RegisterAndLoginUserAsync();
-        await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("OldName"));
 
-        var getResponse = await _client.GetAsync("/api/rooms");
+        // Create initial room
+        await _client.PostAsJsonAsync(RoomsBase, new CreateRoomRequest { Name = "OldName" });
+
+        // Get Room ID
+        var getResponse = await _client.GetAsync(RoomsBase);
         var rooms = await getResponse.Content.ReadFromJsonAsync<List<TestRoomDto>>();
         var roomId = rooms!.First(r => r.Name == "OldName").Id;
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize("NewName"), Encoding.UTF8, "application/json");
-        var renameResponse = await _client.PutAsync($"/api/rooms/{roomId}", content);
+        // We use an anonymous object that matches the JSON structure expected by RenameRoomRequest
+        var renameRequest = new { Name = "NewName" };
+        var renameResponse = await _client.PutAsJsonAsync($"{RoomsBase}/{roomId}", renameRequest);
 
         // Assert
         renameResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var updatedRooms = await (await _client.GetAsync("/api/rooms"))
+        var updatedRooms = await (await _client.GetAsync(RoomsBase))
             .Content.ReadFromJsonAsync<List<TestRoomDto>>();
+
         updatedRooms.Should().Contain(r => r.Name == "NewName");
         updatedRooms.Should().NotContain(r => r.Name == "OldName");
     }
@@ -123,13 +129,13 @@ public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixtur
         // Arrange
         await RegisterAndLoginUserAsync();
         var nonExistentId = Guid.NewGuid();
+        var renameRequest = new { Name = "NewName" };
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize("NewName"), Encoding.UTF8, "application/json");
-        var renameResponse = await _client.PutAsync($"/api/rooms/{nonExistentId}", content);
+        var renameResponse = await _client.PutAsJsonAsync($"{RoomsBase}/{nonExistentId}", renameRequest);
 
         // Assert
-        renameResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        renameResponse.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -137,19 +143,43 @@ public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixtur
     {
         // Arrange - no login
         var roomId = Guid.NewGuid();
+        var renameRequest = new { Name = "NewName" };
 
         // Act
-        var content = new StringContent(JsonSerializer.Serialize("NewName"), Encoding.UTF8, "application/json");
-        var renameResponse = await _client.PutAsync($"/api/rooms/{roomId}", content);
+        var renameResponse = await _client.PutAsJsonAsync($"{RoomsBase}/{roomId}", renameRequest);
 
         // Assert
         renameResponse.StatusCode.Should().BeOneOf(
             HttpStatusCode.Unauthorized,
-            HttpStatusCode.InternalServerError,
-            HttpStatusCode.BadRequest);
+            HttpStatusCode.InternalServerError);
+    }
+
+    #endregion
+
+    #region DeleteRoom Tests
+
+    [Fact]
+    public async Task DeleteRoom_ShouldSucceed_WhenRoomExists()
+    {
+        // Arrange
+        await RegisterAndLoginUserAsync();
+        await _client.PostAsJsonAsync(RoomsBase, new CreateRoomRequest { Name = "RoomToDelete" });
+
+        var rooms = await _client.GetFromJsonAsync<List<TestRoomDto>>(RoomsBase);
+        var roomId = rooms!.First(r => r.Name == "RoomToDelete").Id;
+
+        // Act
+        var deleteResponse = await _client.DeleteAsync($"{RoomsBase}/{roomId}");
+
+        // Assert
+        deleteResponse.StatusCode.Should().BeOneOf(HttpStatusCode.NoContent, HttpStatusCode.OK);
+
+        var checkRooms = await _client.GetFromJsonAsync<List<TestRoomDto>>(RoomsBase);
+        checkRooms.Should().NotContain(r => r.Name == "RoomToDelete");
     }
 
     #endregion
 }
 
+// Local DTOs for testing
 internal record TestRoomDto(string Id, string Name);

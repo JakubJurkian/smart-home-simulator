@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using MQTTnet;
 using MQTTnet.Client;
-using SmartHome.Domain.Interfaces.Device;
+using SmartHome.Domain.Interfaces.Devices;
 
 namespace SmartHome.Api.BackgroundServices;
 

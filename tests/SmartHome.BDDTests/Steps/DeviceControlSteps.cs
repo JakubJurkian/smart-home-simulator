@@ -6,16 +6,10 @@ using SmartHome.Api.Dtos;
 namespace SmartHome.BDDTests.Steps;
 
 [Binding]
-public class DeviceControlSteps : IClassFixture<BddTestFactory>
+public class DeviceControlSteps(ScenarioContext scenarioContext, BddTestFactory factory) : IClassFixture<BddTestFactory>
 {
-    private readonly HttpClient _client;
-    private readonly ScenarioContext _scenarioContext;
-
-    public DeviceControlSteps(ScenarioContext scenarioContext, BddTestFactory factory)
-    {
-        _scenarioContext = scenarioContext;
-        _client = factory.CreateClient();
-    }
+    private readonly HttpClient _client = factory.CreateClient();
+    private readonly ScenarioContext _scenarioContext = scenarioContext;
 
     [Given(@"I am a registered user named ""(.*)""")]
     public async Task GivenIAmARegisteredUserNamed(string userName)
@@ -25,7 +19,7 @@ public class DeviceControlSteps : IClassFixture<BddTestFactory>
         var password = "Pass123!";
 
         var registerRes = await _client.PostAsJsonAsync("/api/users/register",
-            new RegisterRequest(userName, email, password));
+            new RegisterRequest { Username = userName, Email = email, Password = password });
 
         if (!registerRes.IsSuccessStatusCode)
         {
@@ -34,14 +28,15 @@ public class DeviceControlSteps : IClassFixture<BddTestFactory>
         }
 
         var loginRes = await _client.PostAsJsonAsync("/api/users/login",
-            new LoginRequest(email, password));
+            new LoginRequest { Email = email, Password = password });
         loginRes.EnsureSuccessStatusCode();
     }
 
     [Given(@"I have a room named ""(.*)""")]
     public async Task GivenIHaveARoomNamed(string roomName)
     {
-        await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(roomName));
+        var response = await _client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest { Name = roomName });
+        response.EnsureSuccessStatusCode();
 
         var rooms = await _client.GetFromJsonAsync<List<TestRoomDto>>("/api/rooms");
         var roomId = rooms!.First(r => r.Name == roomName).Id;
@@ -54,13 +49,32 @@ public class DeviceControlSteps : IClassFixture<BddTestFactory>
     {
         var roomId = _scenarioContext.Get<string>("CurrentRoomId");
 
-        await _client.PostAsJsonAsync("/api/devices",
-            new CreateDeviceRequest(devName, Guid.Parse(roomId), type));
+        var endpoint = type switch
+        {
+            "LightBulb" => "/api/devices/lightbulb",
+            "TemperatureSensor" => "/api/devices/temperaturesensor",
+            _ => throw new Exception($"Unknown device type for BDD test: {type}")
+        };
 
-        var devices = await _client.GetFromJsonAsync<List<DeviceDto>>("/api/devices");
-        var deviceId = devices!.First(d => d.Name == devName).Id;
+        var response = await _client.PostAsJsonAsync(endpoint,
+            new CreateDeviceRequest { Name = devName, RoomId = Guid.Parse(roomId), Type = type });
 
-        _scenarioContext[devName] = deviceId.ToString();
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Failed to create device at {endpoint}. Status: {response.StatusCode}. Error: {error}");
+        }
+
+        var devices = await _client.GetFromJsonAsync<List<DeviceDto>>("/api/devices/all-system");
+        
+        var device = devices!.FirstOrDefault(d => d.Name == devName);
+        
+        if (device == null)
+        {
+             throw new Exception($"Device '{devName}' was created successfully via API but could not be found in the GET list.");
+        }
+
+        _scenarioContext[devName] = device.Id.ToString();
     }
 
     [When(@"I send a request to turn on ""(.*)""")]
@@ -69,7 +83,12 @@ public class DeviceControlSteps : IClassFixture<BddTestFactory>
         var deviceId = _scenarioContext.Get<string>(devName);
 
         var response = await _client.PutAsync($"/api/devices/{deviceId}/turn-on", null);
-        response.EnsureSuccessStatusCode();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+             var error = await response.Content.ReadAsStringAsync();
+             throw new Exception($"Failed to turn on device. Status: {response.StatusCode}. Error: {error}");
+        }
     }
 
     [Then(@"The device ""(.*)"" should be ON")]

@@ -1,43 +1,49 @@
 using FluentAssertions;
 using Moq;
 using SmartHome.Domain.Entities;
-using SmartHome.Domain.Interfaces;
+using SmartHome.Domain.Interfaces.Users;
 using SmartHome.Infrastructure.Services;
+using Xunit;
 
 namespace SmartHome.UnitTests.Services;
 
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepoMock;
-    private readonly Mock<IDeviceRepository> _deviceRepoMock;
+    
     private readonly UserService _userService;
 
     public UserServiceTests()
     {
         _userRepoMock = new Mock<IUserRepository>();
-        _deviceRepoMock = new Mock<IDeviceRepository>();
 
-        _userService = new UserService(_userRepoMock.Object, _deviceRepoMock.Object);
+
+        _userService = new UserService(_userRepoMock.Object);
     }
 
-    // register
+    // --- REGISTER ---
+
     [Fact]
-    public void Register_ShouldCreateUser_WhenEmailIsUnique()
+    public async Task RegisterAsync_ShouldCreateUser_WhenEmailIsUnique()
     {
         // Arrange
         string email = "test@test.com";
         string password = "secret_password";
 
-        _userRepoMock.Setup(r => r.GetByEmail(email)).Returns((User?)null);
+        _userRepoMock.Setup(r => r.IsEmailTakenAsync(email))
+                     .ReturnsAsync(false);
+
+        _userRepoMock.Setup(r => r.AddAsync(It.IsAny<User>()))
+                     .Returns(Task.CompletedTask);
 
         // Act
-        var userId = _userService.Register("Jan", email, password);
+        var userId = await _userService.RegisterAsync("Jan", email, password);
 
         // Assert
         userId.Should().NotBeEmpty();
 
         // check if add user & password is not plain string
-        _userRepoMock.Verify(r => r.Add(It.Is<User>(u =>
+        _userRepoMock.Verify(r => r.AddAsync(It.Is<User>(u =>
             u.Email == email &&
             u.Username == "Jan" &&
             u.PasswordHash != password // password has to be hashed
@@ -45,23 +51,28 @@ public class UserServiceTests
     }
 
     [Fact]
-    public void Register_ShouldThrowException_WhenEmailExists()
+    public async Task RegisterAsync_ShouldThrowException_WhenEmailExists()
     {
         // Arrange
         string email = "already_taken@test.com";
-        _userRepoMock.Setup(r => r.GetByEmail(email)).Returns(new User());
+        
+        _userRepoMock.Setup(r => r.IsEmailTakenAsync(email))
+                     .ReturnsAsync(true);
 
         // Act
-        Action action = () => _userService.Register("John", email, "password");
+        Func<Task> action = async () => await _userService.RegisterAsync("John", email, "password");
 
         // Assert
-        action.Should().Throw<Exception>().WithMessage("Email is already taken.");
-        _userRepoMock.Verify(r => r.Add(It.IsAny<User>()), Times.Never);
+        await action.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("Email is already registered.");
+            
+        _userRepoMock.Verify(r => r.AddAsync(It.IsAny<User>()), Times.Never);
     }
 
-    // login
+    // --- LOGIN ---
+
     [Fact]
-    public void Login_ShouldReturnUser_WhenCredentialsAreCorrect()
+    public async Task LoginAsync_ShouldReturnUser_WhenCredentialsAreCorrect()
     {
         // Arrange
         string email = "john@test.com";
@@ -72,123 +83,138 @@ public class UserServiceTests
 
         var userInDb = new User { Email = email, PasswordHash = realHash };
 
-        _userRepoMock.Setup(r => r.GetByEmail(email)).Returns(userInDb);
+        _userRepoMock.Setup(r => r.GetByEmailAsync(email))
+                     .ReturnsAsync(userInDb);
 
         // Act
-        var result = _userService.Login(email, password);
+        var result = await _userService.LoginAsync(email, password);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().Be(userInDb);
+        result.Should().BeEquivalentTo(userInDb);
     }
 
     [Fact]
-    public void Login_ShouldReturnNull_WhenPasswordIsWrong()
+    public async Task LoginAsync_ShouldReturnNull_WhenPasswordIsWrong()
     {
         // Arrange
         string email = "john@test.com";
         string realHash = BCrypt.Net.BCrypt.HashPassword("correctPassword");
         var userInDb = new User { Email = email, PasswordHash = realHash };
 
-        _userRepoMock.Setup(r => r.GetByEmail(email)).Returns(userInDb);
+        _userRepoMock.Setup(r => r.GetByEmailAsync(email))
+                     .ReturnsAsync(userInDb);
 
-        // Act - try to login with incorrect password
-        var result = _userService.Login(email, "incorrectPassword");
+        // Act
+        var result = await _userService.LoginAsync(email, "incorrectPassword");
 
         // Assert
         result.Should().BeNull();
     }
 
     [Fact]
-    public void Login_ShouldReturnNull_WhenUserNotFound()
+    public async Task LoginAsync_ShouldReturnNull_WhenUserNotFound()
     {
-        _userRepoMock.Setup(r => r.GetByEmail(It.IsAny<string>())).Returns((User?)null);
-        var result = _userService.Login("unknown@test.pl", "password");
+        _userRepoMock.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
+                     .ReturnsAsync((User?)null);
+                     
+        var result = await _userService.LoginAsync("unknown@test.pl", "password");
+        
         result.Should().BeNull();
     }
 
-    // update user data
+    // --- UPDATE ---
+
     [Fact]
-    public void UpdateUser_ShouldUpdateUsername_AndKeepPassword_WhenPasswordIsNull()
+    public async Task UpdateUserAsync_ShouldUpdateUsername_AndKeepPassword_WhenPasswordIsNull()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var oldHash = "old_hash";
         var user = new User { Id = userId, Username = "OldUsername", PasswordHash = oldHash };
 
-        _userRepoMock.Setup(r => r.GetById(userId)).Returns(user);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
+        _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
-        // ACT - change only name
-        _userService.UpdateUser(userId, "NewUsername", null);
+        // ACT
+        var result = await _userService.UpdateUserAsync(userId, "NewUsername", null);
 
         // Assert
+        result.Should().BeTrue();
         user.Username.Should().Be("NewUsername");
         user.PasswordHash.Should().Be(oldHash); // Password should not change
 
-        _userRepoMock.Verify(r => r.Update(user), Times.Once);
+        _userRepoMock.Verify(r => r.UpdateAsync(user), Times.Once);
     }
 
     [Fact]
-    public void UpdateUser_ShouldUpdatePassword_WhenPasswordIsProvided()
+    public async Task UpdateUserAsync_ShouldUpdatePassword_WhenPasswordIsProvided()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var user = new User { Id = userId, PasswordHash = "old_hash" };
 
-        _userRepoMock.Setup(r => r.GetById(userId)).Returns(user);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
+        _userRepoMock.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
         // Act
-        _userService.UpdateUser(userId, "Nick", "NewPassword123");
+        await _userService.UpdateUserAsync(userId, "Nick", "NewPassword123");
 
         // Assert
-        user.PasswordHash.Should().NotBe("old_hash"); // Password should change
-        user.PasswordHash.Should().NotBe("NewPassword123"); // Password should be hashed
+        user.PasswordHash.Should().NotBe("old_hash");
+        user.PasswordHash.Should().NotBe("NewPassword123"); // Should be hashed
 
-        _userRepoMock.Verify(r => r.Update(user), Times.Once);
+        _userRepoMock.Verify(r => r.UpdateAsync(user), Times.Once);
     }
 
     [Fact]
-    public void UpdateUser_ShouldThrowException_WhenUserNotFound()
+    public async Task UpdateUserAsync_ShouldReturnFalse_WhenUserNotFound()
     {
         var userId = Guid.NewGuid();
-        _userRepoMock.Setup(r => r.GetById(userId)).Returns((User?)null);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
-        Action action = () => _userService.UpdateUser(userId, "Nick", "Password123");
+        // Act
+        var result = await _userService.UpdateUserAsync(userId, "Nick", "Password123");
 
-        action.Should().Throw<Exception>().WithMessage("User not found.");
+        // Assert
+        result.Should().BeFalse();
+        _userRepoMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
     }
 
-    // delete
+    // --- DELETE ---
+
     [Fact]
-    public void DeleteUser_ShouldDeleteDevicesAndUser_WhenUserExists()
+    public async Task DeleteUserAsync_ShouldDeleteUser_WhenUserExists()
     {
         // Arrange
         var userId = Guid.NewGuid();
         var user = new User { Id = userId };
 
-        _userRepoMock.Setup(r => r.GetById(userId)).Returns(user);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
+        _userRepoMock.Setup(r => r.DeleteAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
         // Act
-        _userService.DeleteUser(userId);
+        var result = await _userService.DeleteUserAsync(userId);
 
         // Assert
-        // check if devices were deleted (Cascade Delete)
-        _deviceRepoMock.Verify(d => d.DeleteAllByUserId(userId), Times.Once);
-
-        _userRepoMock.Verify(u => u.Delete(user), Times.Once);
+        result.Should().BeTrue();
+        
+        _userRepoMock.Verify(u => u.DeleteAsync(user), Times.Once);
     }
 
     [Fact]
-    public void DeleteUser_ShouldThrowException_WhenUserNotFound()
+    public async Task DeleteUserAsync_ShouldReturnFalse_WhenUserNotFound()
     {
+
         var userId = Guid.NewGuid();
-        _userRepoMock.Setup(r => r.GetById(userId)).Returns((User?)null);
+        _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
-        Action action = () => _userService.DeleteUser(userId);
+        // Act
+        var result = await _userService.DeleteUserAsync(userId);
 
-        action.Should().Throw<Exception>().WithMessage("User not found.");
+        // Assert
+        result.Should().BeFalse();
 
-        _deviceRepoMock.Verify(d => d.DeleteAllByUserId(It.IsAny<Guid>()), Times.Never);
-        _userRepoMock.Verify(u => u.Delete(It.IsAny<User>()), Times.Never);
+        _userRepoMock.Verify(u => u.DeleteAsync(It.IsAny<User>()), Times.Never);
     }
 }
