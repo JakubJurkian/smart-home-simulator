@@ -10,7 +10,7 @@ public class SignalRNotifier(IHubContext<SmartHomeHub> hubContext) : IDeviceNoti
 
     public async Task NotifyDeviceChanged()
     {
-        // Wysyłamy wiadomość "RefreshDevices" do WSZYSTKICH podłączonych klientów
+        // Send message "RefreshDevices" to all connected devices
         await _hubContext.Clients.All.SendAsync("RefreshDevices");
     }
 
