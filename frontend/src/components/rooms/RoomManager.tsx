@@ -110,7 +110,7 @@ const RoomManager = ({
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
       <h3 className="text-xl font-semibold mb-4 text-gray-700">
-        🏠 Manage Rooms
+        Manage Rooms
       </h3>
 
       <div className="flex flex-wrap gap-3 mb-6">

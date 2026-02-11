@@ -49,7 +49,7 @@ const DeviceForm = ({
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
       <h3 className="text-xl font-semibold mb-4 text-gray-700">
-        ➕ Add New Device
+        Add New Device
       </h3>
       <form
         onSubmit={handleSubmit}
