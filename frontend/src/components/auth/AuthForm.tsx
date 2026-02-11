@@ -63,7 +63,7 @@ const AuthForm = ({
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
         <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">
-          {isLoginMode ? "🔐 Log In" : "📝 Register"}
+          {isLoginMode ? "Log In" : "Register"}
         </h2>
         {error && (
           <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm text-center font-medium border border-red-200">

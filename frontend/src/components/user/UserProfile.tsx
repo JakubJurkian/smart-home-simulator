@@ -129,7 +129,7 @@ const UserProfile = ({
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-md border border-gray-200 mt-8">
       <div className="flex items-center justify-between mb-6 border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-800">👤 User Profile</h2>
+        <h2 className="text-2xl font-bold text-gray-800">User Profile</h2>
         <button
           onClick={onBack}
           className="cursor-pointer text-gray-500 hover:text-gray-800 px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 transition text-sm"
@@ -269,7 +269,7 @@ const UserProfile = ({
             } text-white font-bold rounded-lg transition-transform`}
             disabled={!canSave}
           >
-            💾 Save Changes
+            Save Changes
           </button>
         </div>
       </form>
@@ -285,7 +285,7 @@ const UserProfile = ({
             onClick={handleDeleteAccount}
             className="whitespace-nowrap px-4 py-2 bg-white border border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded-lg font-bold transition shadow-sm cursor-pointer"
           >
-            🗑️ Delete Account
+            Delete Account
           </button>
         </div>
       </div>
