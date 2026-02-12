@@ -10,6 +10,18 @@
 
 ---
 
+## Screenshots
+
+|                        Main Page                            |                         User Profile                            |
+| :---------------------------------------------------------: | :-------------------------------------------------------------: |
+| ![Main Page Placeholder](docs/images/landing-desktop.webp)   | ![User Profile Placeholder](docs/images/user-profile-desktop.webp)  |
+
+|                     Main Mobile                          |                        User Profile Mobile                |
+| :------------------------------------------------------: | :-------------------------------------------------------: |
+| ![Main Mobile Placeholder](docs/images/landing-mobile.webp) | ![User Profile Mobile Placeholder](docs/images/user-profile-mobile.webp) |
+
+---
+
 ## Key Features
 
 ### For Users
