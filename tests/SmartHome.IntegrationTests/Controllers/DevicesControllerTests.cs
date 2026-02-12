@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using SmartHome.Api.Dtos;
 using SmartHome.Domain.Interfaces.Devices;
+using System.Text.Json; // Needed for JsonElement
 using Xunit;
 
 namespace SmartHome.IntegrationTests.Controllers;
@@ -27,7 +28,7 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
         var roomId = await CreateRoomAsync("Bedroom");
 
         var newDevice = new CreateDeviceRequest { Name = "Lamp 1", RoomId = Guid.Parse(roomId), Type = "LightBulb" };
-        
+
         // Correct Endpoint
         var deviceResponse = await _client.PostAsJsonAsync($"{DevicesBase}/lightbulb", newDevice);
 
@@ -36,6 +37,28 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
         var getResponse = await _client.GetAsync($"{DevicesBase}/all-system");
         var content = await getResponse.Content.ReadAsStringAsync();
         content.Should().Contain("Lamp 1");
+    }
+
+    [Fact]
+    public async Task GetDevicesByUserId_ShouldReturnList_ContainingUserDevices()
+    {
+        var userId = await RegisterAndLoginAsync("tech");
+
+        var roomId = await CreateRoomAsync("Bedroom");
+
+        var newDevice = new CreateDeviceRequest { Name = "Lamp 1", RoomId = Guid.Parse(roomId), Type = "LightBulb" };
+        var createResponse = await _client.PostAsJsonAsync($"{DevicesBase}/lightbulb", newDevice);
+        createResponse.EnsureSuccessStatusCode();
+
+        // controller knows the userId thanks to cookie from login, so we just hit the base endpoint
+        var getResponse = await _client.GetAsync(DevicesBase);
+
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var devices = await getResponse.Content.ReadFromJsonAsync<List<TestDeviceDto>>();
+
+        devices.Should().NotBeNull();
+        devices.Should().Contain(d => d.Name == "Lamp 1");
     }
 
     #endregion
@@ -195,13 +218,13 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
         var newName = "Kitchen Light Updated";
 
         // 2. Act
-        // Wysyłamy obiekt JSON, bo kontroler oczekuje RenameDeviceRequest
+        // Send JSON object
         var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", new { Name = newName });
 
         // 3. Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // Dodatkowe sprawdzenie: Pobieramy urządzenie, by upewnić się, że nazwa w bazie się zmieniła
+        // Additional check
         var getResponse = await _client.GetFromJsonAsync<TestDeviceDto>($"{DevicesBase}/{deviceId}");
         getResponse.Should().NotBeNull();
         getResponse!.Name.Should().Be(newName);
@@ -210,16 +233,13 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
     [Fact]
     public async Task RenameDevice_ShouldReturnBadRequest_WhenNameIsEmpty()
     {
-        // Pokrywa: catch (ArgumentException ex) -> BadRequest
-        // Logika w encji Device: if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException...
-
         // 1. Arrange
         await RegisterAndLoginAsync("rename-empty");
         var roomId = await CreateRoomAsync("Empty Name Room");
         var deviceId = await CreateDeviceAsync("Valid Name", "LightBulb", roomId);
 
         // 2. Act
-        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", new { Name = "" }); // Pusty string
+        var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", new { Name = "" });
 
         // 3. Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -228,9 +248,6 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
     [Fact]
     public async Task RenameDevice_ShouldReturnNotFound_WhenDeviceDoesNotExist()
     {
-        // Pokrywa: if (!success) -> return NotFound();
-        // Service zwraca false, gdy repozytorium zwróci null
-
         // 1. Arrange
         await RegisterAndLoginAsync("rename-404");
         var randomId = Guid.NewGuid();
@@ -239,39 +256,31 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
         var response = await _client.PutAsJsonAsync($"{DevicesBase}/{randomId}", new { Name = "New Name" });
 
         // 3. Assert
-        // Twoja implementacja kontrolera zwraca BadRequest jeśli serwis zwróci false
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
     }
 
     [Fact]
-    public async Task RenameDevice_ShouldReturnNotFound_WhenDeviceBelongsToAnotherUser()
+    public async Task RenameDevice_ShouldReturnBadRequest_WhenDeviceBelongsToAnotherUser()
     {
-        // Pokrywa: bezpieczeństwo danych. Użytkownik A nie może zmienić nazwy urządzenia Użytkownika B.
-        // Service.Get(id, userId) zwróci null, więc success = false -> NotFound
-
-        // 1. Arrange - User A tworzy urządzenie
+        // 1. Arrange - User A
         await RegisterAndLoginAsync("user-owner");
         var roomId = await CreateRoomAsync("User A Room");
         var deviceId = await CreateDeviceAsync("User A Device", "LightBulb", roomId);
 
-        // 2. Arrange - Logujemy się jako User B (Hacker)
+        // 2. Arrange - User B
         await RegisterAndLoginAsync("user-hacker");
 
-        // 3. Act - User B próbuje zmienić nazwę urządzenia Usera A
+        // 3. Act
         var response = await _client.PutAsJsonAsync($"{DevicesBase}/{deviceId}", new { Name = "Hacked Name" });
 
         // 4. Assert
-        // Kontroler zwraca BadRequest gdy serwis zwróci false (brak dostępu/urządzenia)
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task RenameDevice_ShouldReturnUnauthorized_WhenNotLoggedIn()
     {
-        // Pokrywa: catch (UnauthorizedAccessException) -> Unauthorized
-
         // 1. Arrange
-        // NIE logujemy się (brak ciasteczka)
         var deviceId = Guid.NewGuid();
 
         // 2. Act
@@ -285,15 +294,30 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
 
     #region Helpers
 
-    private async Task RegisterAndLoginAsync(string prefix)
+    private async Task<Guid> RegisterAndLoginAsync(string prefix)
     {
         var uniqueSuffix = Guid.NewGuid().ToString().Substring(0, 6);
         var email = $"{prefix}-{uniqueSuffix}@test.com";
         var password = "Pass123!";
 
-        await _client.PostAsJsonAsync(UsersRegister, new RegisterRequest { Username = $"{prefix}User", Email = email, Password = password });
-        var loginResponse = await _client.PostAsJsonAsync(UsersLogin, new LoginRequest { Email = email, Password = password });
-        loginResponse.EnsureSuccessStatusCode();
+        var registerResponse = await _client.PostAsJsonAsync(UsersRegister,
+            new RegisterRequest { Username = $"{prefix}User", Email = email, Password = password });
+        registerResponse.EnsureSuccessStatusCode();
+
+        // Safe parsing of the anonymous result object from controller
+        var result = await registerResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        if (result.TryGetProperty("id", out var idElement) && idElement.GetString() is string idStr)
+        {
+            // Login to set cookie
+            var loginResponse = await _client.PostAsJsonAsync(UsersLogin,
+                new LoginRequest { Email = email, Password = password });
+            loginResponse.EnsureSuccessStatusCode();
+
+            return Guid.Parse(idStr);
+        }
+
+        throw new Exception("Failed to parse User ID from registration response");
     }
 
     private async Task<string> CreateRoomAsync(string name)
@@ -306,7 +330,6 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
 
     private async Task<string> CreateDeviceAsync(string name, string type, string roomId)
     {
-        // Wybór odpowiedniego endpointu na podstawie typu
         var endpoint = type switch
         {
             "LightBulb" => $"{DevicesBase}/lightbulb",
@@ -317,10 +340,12 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
         var response = await _client.PostAsJsonAsync(endpoint, new CreateDeviceRequest { Name = name, RoomId = Guid.Parse(roomId), Type = type });
         response.EnsureSuccessStatusCode();
 
-        // Używamy All-System żeby łatwo znaleźć ID
         var getResponse = await _client.GetAsync($"{DevicesBase}/all-system");
         var devices = await getResponse.Content.ReadFromJsonAsync<List<TestDeviceDto>>();
-        return devices!.First(d => d.Name == name).Id;
+
+        var device = devices!.FirstOrDefault(d => d.Name == name);
+        if (device == null) throw new Exception($"Device '{name}' not found.");
+        return device.Id;
     }
 
     #endregion
@@ -330,40 +355,22 @@ public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixt
     [Fact]
     public async Task AddDevice_ShouldReturnBadRequest_WhenNameIsEmpty()
     {
-        // Covers: catch (ArgumentException ex) -> return BadRequest(ex.Message);
-
         // Arrange
         await RegisterAndLoginAsync("bad-name-user");
         var roomId = await CreateRoomAsync("Test Room");
 
-        // Act - Try to create a device with empty name
+        // Act
         var invalidDeviceRequest = new CreateDeviceRequest { Name = "", RoomId = Guid.Parse(roomId), Type = "LightBulb" };
         var response = await _client.PostAsJsonAsync($"{DevicesBase}/lightbulb", invalidDeviceRequest);
 
         // Assert
-        // Kontroler może zwrócić BadRequest lub Conflict (zależnie od łapanego wyjątku), ale serwis rzuca ArgumentException
-        // Twoja obsługa błędów: catch (Unauthorized) -> 401. Domyślnie exception leci do middleware.
-        // Jeśli nie masz try-catch na ArgumentException w kontrolerze, to będzie 500. 
-        // W UsersController jest catch (ArgumentException). Sprawdźmy DevicesController... nie ma.
-        // Jednak xUnit pokaże 500 jeśli nie złapiesz. Zakładam, że global handler lub middleware to łapie.
-        // Jeśli serwis rzuca ArgumentException a kontroler nie łapie, test obleje na 500.
-        // Dostosujmy do oczekiwań frameworka.
-        // W Twoim kodzie widzę brak try/catch w AddLightBulb (poza Auth). Więc to będzie 500.
-        // Ale użytkownik chce działający kod. 
-        
-        // Zmieniam oczekiwanie na InternalServerError, bo tak wynika z Twojego kodu kontrolera
-        // (chyba że masz global filter).
         response.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError);
     }
 
     [Fact]
     public async Task AddDevice_ShouldReturnUnauthorized_WhenNotLoggedIn()
     {
-        // Covers: catch (UnauthorizedAccessException) -> return Unauthorized();
-
         // Arrange
-        // We DO NOT call RegisterAndLoginAsync here.
-        // We use a random GUID for RoomId because Auth check happens before logic validation.
         var request = new CreateDeviceRequest { Name = "Secret Lamp", RoomId = Guid.NewGuid(), Type = "LightBulb" };
 
         // Act
