@@ -212,9 +212,9 @@ const RoomManager = ({
 
       <form
         onSubmit={handleAddSubmit}
-        className="flex gap-2 border-t pt-4 items-start"
+        className="flex flex-col sm:flex-row gap-2 border-t pt-4 items-start"
       >
-        <div className="flex flex-col">
+        <div className="flex flex-col w-full sm:w-auto">
           <input
             type="text"
             placeholder="New Room Name..."
@@ -222,7 +222,7 @@ const RoomManager = ({
             onChange={handleAddChange}
             onBlur={handleAddBlur}
             maxLength={32}
-            className={`p-2 border rounded-lg text-sm focus:ring-2 outline-none w-64 ${
+            className={`w-full sm:w-auto p-2 border rounded-lg text-sm focus:ring-2 outline-none ${
               addError
                 ? "border-red-500 focus:ring-red-200"
                 : "border-gray-300 focus:ring-blue-500"
@@ -235,7 +235,7 @@ const RoomManager = ({
         <button
           type="submit"
           disabled={!canAdd}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition ${
             canAdd
               ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
