@@ -257,9 +257,9 @@ function App() {
 
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 sm:gap-0 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <h1 className="text-2xl sm:text-3xl font-bold text-blue-600 flex items-center gap-2 flex-col sm:flex-row">
+          <h1 className="text-3xl font-bold text-blue-600 flex items-center gap-2 flex-col sm:flex-row">
             Smart Home{" "}
-            <span className="text-gray-400 text-lg font-normal">
+            <span className="text-gray-400 text-lg font-normal hidden sm:block mt-1.5">
               | {user.username}
             </span>
           </h1>
