@@ -14,11 +14,11 @@
 
 |                        Main Page                            |                         User Profile                            |
 | :---------------------------------------------------------: | :-------------------------------------------------------------: |
-| ![Main Page Placeholder](docs/images/landing-desktop.webp)   | ![User Profile Placeholder](docs/images/user-profile-desktop.webp)  |
+| ![Main Page Placeholder](frontend/docs/images/landing-desktop.webp)   | ![User Profile Placeholder](frontend/docs/images/user-profile-desktop.webp)  |
 
 |                     Main Mobile                          |                        User Profile Mobile                |
 | :------------------------------------------------------: | :-------------------------------------------------------: |
-| ![Main Mobile Placeholder](docs/images/landing-mobile.webp) | ![User Profile Mobile Placeholder](docs/images/user-profile-mobile.webp) |
+| ![Main Mobile Placeholder](frontend/docs/images/landing-mobile.webp) | ![User Profile Mobile Placeholder](frontend/docs/images/user-profile-mobile.webp) |
 
 ---
 
