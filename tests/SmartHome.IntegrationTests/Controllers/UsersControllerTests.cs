@@ -60,16 +60,41 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
 
     #endregion
 
+    #region GET
+
+    [Fact]
+    public async Task GetUser_ShouldReturnUserData_WhenItsTheirData()
+    {
+        var (expectedId, expectedEmail, expectedUsername) = await RegisterAndLoginAsync("Test");
+        var response = await _client.GetAsync($"{UsersBase}/me");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var user = await response.Content.ReadFromJsonAsync<TestUserDto>();
+
+        user.Should().NotBeNull();
+        user.Id.Should().Be(expectedId);
+        user.Email.Should().Be(expectedEmail);
+        user.Username.Should().Be(expectedUsername);
+    }
+
+    [Fact]
+    public async Task GetUser_ShouldThrowUnauthorizedEx_WhenItsNotTheirData()
+    {
+        var response = await _client.GetAsync($"{UsersBase}/me");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    #endregion
+
     #region Update (PUT)
 
     [Fact]
     public async Task UpdateUser_ShouldSucceed_WhenUpdatingOwnProfile()
     {
-        var (userId, _) = await RegisterAndLoginAsync("updater");
+        var (userId, _, _) = await RegisterAndLoginAsync("updater");
         var updateRequest = new UpdateUserRequest { Username = "UpdatedName", Password = "NewPass123!" };
 
         var response = await _client.PutAsJsonAsync($"{UsersBase}/{userId}", updateRequest);
-        
+
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
@@ -77,11 +102,11 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
     public async Task UpdateUser_ShouldReturn403_WhenUpdatingSomeoneElse()
     {
         var (victimId, _) = await RegisterUserAsync("victim-up");
-        
+
         await RegisterAndLoginAsync("attacker-up");
 
         var updateRequest = new UpdateUserRequest { Username = "Hacked", Password = "HackedPass!" };
-        
+
         var response = await _client.PutAsJsonAsync($"{UsersBase}/{victimId}", updateRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -105,10 +130,10 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
     [Fact]
     public async Task DeleteUser_ShouldReturn204_WhenDeletingOwnAccount()
     {
-        var (userId, _) = await RegisterAndLoginAsync("delete-me");
-        
+        var (userId, _, _) = await RegisterAndLoginAsync("delete-me");
+
         var response = await _client.DeleteAsync($"{UsersBase}/{userId}");
-        
+
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
@@ -119,7 +144,7 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
         await RegisterAndLoginAsync("attacker-del");
 
         var response = await _client.DeleteAsync($"{UsersBase}/{victimId}");
-        
+
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
@@ -127,7 +152,7 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
     public async Task DeleteUser_ShouldReturn401_WhenNotLoggedIn()
     {
         var response = await _client.DeleteAsync($"{UsersBase}/{Guid.NewGuid()}");
-        
+
         response.StatusCode.Should().BeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest);
     }
 
@@ -135,12 +160,12 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
 
     #region Helpers
 
-    private async Task<(Guid, string)> RegisterAndLoginAsync(string prefix)
+    private async Task<(Guid, string, string)> RegisterAndLoginAsync(string prefix)
     {
         var (id, email) = await RegisterUserAsync(prefix);
         var loginRes = await _client.PostAsJsonAsync($"{UsersBase}/login", new LoginRequest { Email = email, Password = "Password123!" });
         loginRes.EnsureSuccessStatusCode();
-        return (id, email);
+        return (id, email, prefix);
     }
 
     private async Task<(Guid, string)> RegisterUserAsync(string prefix)
@@ -149,18 +174,18 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
         var email = $"{prefix}-{unique}@test.com";
         var password = "Password123!";
 
-        var response = await _client.PostAsJsonAsync($"{UsersBase}/register", 
+        var response = await _client.PostAsJsonAsync($"{UsersBase}/register",
             new RegisterRequest { Username = prefix, Email = email, Password = password });
-        
+
         response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
-        
+
         if (result.TryGetProperty("id", out var idElement) && idElement.GetString() is string idStr)
         {
             return (Guid.Parse(idStr), email);
         }
-        
+
         throw new Exception("Failed to retrieve ID from registration response");
     }
 
@@ -173,3 +198,5 @@ internal record UpdateUserRequest
     public string Username { get; init; } = string.Empty;
     public string? Password { get; init; }
 }
+
+internal record TestUserDto(Guid Id, string Username, string Email);
