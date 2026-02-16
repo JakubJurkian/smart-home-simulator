@@ -22,6 +22,16 @@
 
 ---
 
+## Dockerized Ecosystem
+The entire platform is containerized using **Docker** and **Docker Compose**, allowing for a "one-command" setup of the full infrastructure.
+
+### Services Included:
+* **Backend API:** ASP.NET Core 10 service.
+* **Frontend:** Vite + React 19 application.
+* **MQTT Broker:** Eclipse Mosquitto for IoT messaging.
+* **IoT Simulator:** Automated device simulator generating real-time data.
+* **Database:** SQLite with persistent volume mapping.
+
 ## Key Features
 
 ### For Users
@@ -71,6 +81,8 @@
 - ![Reqnroll](https://img.shields.io/badge/Reqnroll-BDD-green) **Reqnroll** (BDD/Gherkin)
 - ![NBomber](https://img.shields.io/badge/NBomber-Performance-orange) **NBomber** (Load Testing)
 - ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=githubactions&logoColor=white) **GitHub Actions**
+- ![Docker](https://img.shields.io/badge/Docker-Orchestration-2496ED?logo=docker&logoColor=white) **Docker Compose**
+- ![Mosquitto](https://img.shields.io/badge/Mosquitto-Broker-3C5280?logo=eclipsemosquitto&logoColor=white) **Eclipse Mosquitto**
 
 ---
 
@@ -163,7 +175,23 @@ smart-home-simulator/
 * Node.js (v18 or higher)
 * npm or yarn
 
-### Installation
+### Quick Start (Docker)
+
+**1. Clone the repository**
+```
+git clone https://github.com/JakubJurkian/smart-home-simulator.git
+cd smart-home-simulator
+```
+**2. Start the ecosystem**
+```
+docker-compose up --build
+```
+**3. Access the Platform**
+* Frontend: http://localhost:3000
+* API Swagger: http://localhost:5000/swagger
+* MQTT Broker: localhost:1883 (TCP) & localhost:9001 (WebSockets)
+
+### Manual Installation
 
 **1. Clone the repository**
 
