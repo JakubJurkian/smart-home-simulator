@@ -112,7 +112,7 @@ function App() {
     if (!user) return;
 
     const connection = new HubConnectionBuilder()
-      .withUrl("http://localhost:5187/smarthomehub")
+      .withUrl("http://localhost:5000/smarthomehub")
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
