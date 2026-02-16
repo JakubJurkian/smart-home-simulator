@@ -1,12 +1,32 @@
 services:
+  # MQTT Broker (Mosquitto)
   mqtt:
     image: eclipse-mosquitto:latest
     container_name: smarthome-mqtt
     ports:
-      - "1883:1883" # For C# Backend
-      - "9001:9001" # For React Frontend (WebSockets)
+      - "1883:1883" # Port Mqtt (Backend)
+      - "9001:9001" # Port WebSockets (Frontend)
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     restart: unless-stopped
+
+  # API (.NET Backend + SQLite)
+  api:
+    build:
+      context: ./backend/src
+      dockerfile: SmartHome.Api/Dockerfile
+    container_name: smarthome-api
+    ports:
+      - "5000:8080" # http://localhost:5000/swagger
+    volumes:
+      # map Database folder to /app/db in container
+      - ./backend/src/SmartHome.Api/Database:/app/db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Data Source=/app/db/smarthome.db
+      - MqttSettings__Host=mqtt
+      - MqttSettings__Port=1883
+    depends_on:
+      - mqtt
