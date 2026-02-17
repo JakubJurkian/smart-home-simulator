@@ -52,7 +52,7 @@ while (true)
 
             foreach (var sensor in sensors)
             {
-                // Wygeneruj dane
+                // Generate data
                 double temp = Math.Round(20.0 + (random.NextDouble() * 3.0), 2);
                 string json = JsonSerializer.Serialize(new { temperature = temp });
 
