@@ -85,7 +85,7 @@ function App() {
         console.error("Fetch failed:", err);
         setGlobalError(
           err.message === "Failed to fetch"
-            ? "🔌 Connection to server lost."
+            ? "Connection to server lost."
             : err.message,
         );
       });
@@ -304,7 +304,7 @@ function App() {
             <div className="mb-8">
               <input
                 type="text"
-                placeholder="🔍 Search for devices (e.g. 'Kitchen Light')..."
+                placeholder="Search for devices (e.g. 'Kitchen Light')..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="w-full p-4 rounded-xl border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"

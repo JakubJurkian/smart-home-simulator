@@ -7,17 +7,11 @@ using SmartHome.Domain.Interfaces.Devices;
 
 namespace SmartHome.Api.BackgroundServices;
 
-public class TcpSmartHomeServer : BackgroundService
+public class TcpSmartHomeServer(ILogger<TcpSmartHomeServer> logger, IServiceScopeFactory scopeFactory) : BackgroundService
 {
-    private readonly ILogger<TcpSmartHomeServer> _logger;
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<TcpSmartHomeServer> _logger = logger;
+    private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
     private const int Port = 9000;
-
-    public TcpSmartHomeServer(ILogger<TcpSmartHomeServer> logger, IServiceScopeFactory scopeFactory)
-    {
-        _logger = logger;
-        _scopeFactory = scopeFactory;
-    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

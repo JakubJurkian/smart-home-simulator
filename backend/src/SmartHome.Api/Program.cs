@@ -35,7 +35,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Konfiguracja Bazy Danych
+// Database configuration
 builder.Services.AddDbContext<SmartHomeDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SmartHome.Infrastructure")));
 // line necessary for migration
@@ -44,12 +44,6 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<IDeviceNotifier, SignalRNotifier>();
 
 // REPOSITORY REGISTRATION
-// AddSingleton because we store data in memory (RAM)
-// for a database, we use AddScoped
-// Singleton ensures data persists across different requests
-// builder.Services.AddSingleton<IDeviceRepository, InMemoryDeviceRepository>();
-
-// We changed AddSingleton to AddScoped. DB lives shortly (for request)
 builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 

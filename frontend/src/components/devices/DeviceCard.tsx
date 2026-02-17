@@ -160,7 +160,7 @@ const DeviceCard = ({
 
               <button
                 onClick={() => setIsEditing(true)}
-                className="shrink-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 transition-opacity p-1 text-sm cursor-pointer"
+                className="shrink-0 text-gray-400 hover:text-blue-500 transition-opacity p-1 text-sm cursor-pointer"
                 title="Rename"
               >
                 ✏️
