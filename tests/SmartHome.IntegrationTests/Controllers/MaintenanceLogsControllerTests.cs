@@ -8,7 +8,10 @@ namespace SmartHome.IntegrationTests.Controllers;
 
 public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IClassFixture<IntegrationTestFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+    {
+        HandleCookies = true
+    });
 
     private async Task<(string deviceId, string logId)> SetupDeviceWithLogAsync()
     {
@@ -46,7 +49,7 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         // Get LogId
         var logsRes = await _client.GetAsync($"/api/logs/{deviceId}");
         var logs = await logsRes.Content.ReadFromJsonAsync<List<TestLogDto>>();
-        
+
         var logId = logs!.Last(l => l.Description == "Initial Log").Id;
 
         return (deviceId, logId);
@@ -106,9 +109,9 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var logsRes = await _client.GetAsync($"/api/logs/{deviceId}");
-        
+
         var logs = await logsRes.Content.ReadFromJsonAsync<List<TestLogDto>>();
-        
+
         var updatedLog = logs!.FirstOrDefault(l => l.Id == logId);
         updatedLog.Should().NotBeNull();
         updatedLog!.Description.Should().Be("Updated Description");
@@ -147,7 +150,7 @@ public class MaintenanceLogsControllerTests(IntegrationTestFactory factory) : IC
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var logsRes = await _client.GetAsync($"/api/logs/{deviceId}");
-        
+
         var logs = await logsRes.Content.ReadFromJsonAsync<List<TestLogDto>>();
         logs.Should().NotContain(l => l.Id == logId);
     }

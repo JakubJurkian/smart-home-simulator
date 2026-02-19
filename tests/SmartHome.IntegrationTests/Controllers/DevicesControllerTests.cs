@@ -11,7 +11,10 @@ namespace SmartHome.IntegrationTests.Controllers;
 
 public class DevicesControllerTests(IntegrationTestFactory factory) : IClassFixture<IntegrationTestFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+    {
+        HandleCookies = true
+    });
 
     // API Endpoints
     private const string DevicesBase = "/api/devices";
