@@ -36,9 +36,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Database configuration
+// services.AddDbContext<AppDbContext>(options =>
+//     options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<SmartHomeDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("SmartHome.Infrastructure")));
-// line necessary for migration
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IDeviceNotifier, SignalRNotifier>();
@@ -60,7 +61,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")  // React (localhost:5173) now can connect
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? ["http://localhost:5173"];
+
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
