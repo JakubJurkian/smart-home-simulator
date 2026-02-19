@@ -59,11 +59,13 @@ public class UsersController(
 
         logger.LogInformation("User logged in: {UserId}", user.Id);
 
+        var isProduction = env.IsProduction();
+
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, // JS nie ma dostępu do tego ciastka
-            Secure = !env.IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
+            HttpOnly = true,
+            Secure = isProduction,
+            SameSite = isProduction ? SameSiteMode.None : SameSiteMode.Lax,
             Expires = DateTime.UtcNow.AddDays(7)
         };
 

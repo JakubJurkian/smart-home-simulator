@@ -38,8 +38,12 @@ builder.Services.AddSwaggerGen();
 // Database configuration
 // services.AddDbContext<AppDbContext>(options =>
 //     options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddDbContext<SmartHomeDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// This prevents provider conflicts with SQLite during Integration Tests
+if (builder.Environment.EnvironmentName != "Testing")
+{
+    builder.Services.AddDbContext<SmartHomeDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IDeviceNotifier, SignalRNotifier>();
@@ -75,8 +79,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHostedService<TcpSmartHomeServer>();
-builder.Services.AddHostedService<MqttListenerService>();
+if (builder.Environment.EnvironmentName != "Testing")
+{
+    builder.Services.AddHostedService<TcpSmartHomeServer>();
+    builder.Services.AddHostedService<MqttListenerService>();
+}
 
 var app = builder.Build();
 
@@ -84,20 +91,23 @@ var app = builder.Build();
 // Here we define the request handling pipeline
 
 app.UseCors("AllowReactApp");
-// logs all HTTP requests.
 app.UseSerilogRequestLogging();
 
-// Enable Swagger UI only in Dev env.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(); // Generates the interactive HTML page
+    app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection(); // Redirect HTTP to HTTPS automatically
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers(); // Map endpoints from [ApiController] classes
 
-app.MapHub<SmartHomeHub>("/smarthomehub"); //endpoint for WebSockets
+app.MapControllers();
+app.MapHub<SmartHomeHub>("/smarthomehub");
 
-app.Run(); // Start the app
+app.Run();
