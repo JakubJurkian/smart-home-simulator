@@ -20,32 +20,38 @@ public class IntegrationTestFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll<DbContextOptions<SmartHomeDbContext>>();
-            services.RemoveAll<DbContextOptions>();
-            services.RemoveAll<SmartHomeDbContext>();
-            services.RemoveAll<DbConnection>();
+            var dbContextDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(DbContextOptions<SmartHomeDbContext>));
+            if (dbContextDescriptor != null) services.Remove(dbContextDescriptor);
 
-            services.RemoveAll<IHostedService>();
+            var dbContextServiceDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(SmartHomeDbContext));
+            if (dbContextServiceDescriptor != null) services.Remove(dbContextServiceDescriptor);
+
+            services.RemoveAll<DbConnection>();
 
             _connection = new SqliteConnection("DataSource=:memory:");
             _connection.Open();
-            services.AddSingleton<DbConnection>(_ => _connection);
+
             services.AddDbContext<SmartHomeDbContext>(options =>
             {
                 options.UseSqlite(_connection);
+                options.UseInternalServiceProvider(null);
             });
+            services.RemoveAll<IHostedService>();
+        });
+    }
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
 
-            var sp = services.BuildServiceProvider();
-            using var scope = sp.CreateScope();
+        using (var scope = host.Services.CreateScope())
+        {
             var db = scope.ServiceProvider.GetRequiredService<SmartHomeDbContext>();
             db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
-        });
-    }
+        }
 
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-        _connection?.Dispose();
+        return host;
     }
 }
