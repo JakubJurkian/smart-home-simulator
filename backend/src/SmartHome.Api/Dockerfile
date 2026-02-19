@@ -18,5 +18,12 @@ RUN dotnet publish "SmartHome.Api.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+# Azure App Service set PORT dynamically
+ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD curl -f http://localhost:8080/api/devices || exit 1
+
 ENTRYPOINT ["dotnet", "SmartHome.Api.dll"]
