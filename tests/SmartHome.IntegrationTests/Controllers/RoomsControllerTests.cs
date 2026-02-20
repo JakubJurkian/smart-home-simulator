@@ -8,7 +8,10 @@ namespace SmartHome.IntegrationTests.Controllers;
 
 public class RoomsControllerTests(IntegrationTestFactory factory) : IClassFixture<IntegrationTestFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+    {
+        HandleCookies = true
+    });
     private const string RoomsBase = "/api/rooms";
     private const string UsersRegister = "/api/users/register";
     private const string UsersLogin = "/api/users/login";

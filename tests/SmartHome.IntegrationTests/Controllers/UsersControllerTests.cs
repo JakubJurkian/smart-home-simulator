@@ -9,7 +9,10 @@ namespace SmartHome.IntegrationTests.Controllers;
 
 public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixture<IntegrationTestFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+    {
+        HandleCookies = true
+    });
     private const string UsersBase = "/api/users";
 
     #region Register & Login
