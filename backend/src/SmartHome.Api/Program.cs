@@ -25,7 +25,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // --- Database Provider Registration ---
-// In ASP.NET Core, you must register the DbContext BEFORE calling builder.Build()
 if (builder.Environment.EnvironmentName != "Testing")
 {
     if (builder.Environment.IsDevelopment())
