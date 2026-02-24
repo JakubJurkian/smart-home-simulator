@@ -112,7 +112,7 @@ function App() {
     if (!user) return;
 
     const connection = new HubConnectionBuilder()
-      .withUrl("http://localhost:5000/smarthomehub")
+      .withUrl(`${import.meta.env.VITE_API_URL.replace('/api', '')}/smarthomehub`)
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
