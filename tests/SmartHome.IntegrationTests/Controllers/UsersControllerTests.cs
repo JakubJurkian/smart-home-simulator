@@ -44,7 +44,7 @@ public class UsersControllerTests(IntegrationTestFactory factory) : IClassFixtur
         response.Headers.Contains("Set-Cookie").Should().BeTrue();
 
         var cookieHeader = response.Headers.GetValues("Set-Cookie").First();
-        cookieHeader.Should().Contain("userId");
+        cookieHeader.Should().Contain("SmartHomeAuth");
     }
 
     #endregion
