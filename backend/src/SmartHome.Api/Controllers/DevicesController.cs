@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using SmartHome.Domain.Interfaces.Devices;
 using SmartHome.Domain.Entities;
 using SmartHome.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace SmartHome.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class DevicesController(IDeviceService service, ILogger<DevicesController> logger) : ControllerBase
@@ -143,12 +146,14 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
 
     private Guid GetCurrentUserId()
     {
-        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
-            Guid.TryParse(userIdString, out var userId))
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (Guid.TryParse(userIdClaim, out var userId))
         {
             return userId;
         }
-        throw new UnauthorizedAccessException("User not logged in");
+
+        throw new UnauthorizedAccessException("User not logged in.");
     }
 
     [HttpGet("all-system")] // /api/devices/all-system

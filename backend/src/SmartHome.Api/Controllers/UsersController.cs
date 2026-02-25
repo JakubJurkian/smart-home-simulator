@@ -1,9 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Api.Dtos;
 using SmartHome.Domain.Interfaces.Users;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace SmartHome.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/users")]
 public class UsersController(
@@ -13,16 +18,19 @@ public class UsersController(
 {
     private Guid GetCurrentUserId()
     {
-        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
-            Guid.TryParse(userIdString, out var userId))
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (Guid.TryParse(userIdClaim, out var userId))
         {
             return userId;
         }
+
         throw new UnauthorizedAccessException("User not logged in.");
     }
 
     // POST: api/users/register
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
@@ -47,6 +55,7 @@ public class UsersController(
 
     // POST: api/users/login
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var user = await userService.LoginAsync(request.Email, request.Password);
@@ -59,17 +68,25 @@ public class UsersController(
 
         logger.LogInformation("User logged in: {UserId}", user.Id);
 
-        var isProduction = env.IsProduction();
+        var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Name, user.Username),
+        new Claim(ClaimTypes.Email, user.Email)
+    };
 
-        var cookieOptions = new CookieOptions
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        var authProperties = new AuthenticationProperties
         {
-            HttpOnly = true,
-            Secure = isProduction,
-            SameSite = isProduction ? SameSiteMode.None : SameSiteMode.Lax,
-            Expires = DateTime.UtcNow.AddDays(7)
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
         };
 
-        Response.Cookies.Append("userId", user.Id.ToString(), cookieOptions);
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
 
         return Ok(new
         {
