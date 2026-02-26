@@ -9,8 +9,9 @@
 #
 # Required GitHub Variables (Settings → Variables):
 #   RESOURCE_GROUP       — e.g. "smarthome-rg"
-#   LOCATION             — e.g. "westeurope"
+#   LOCATION             — e.g. "centralus"
 #   ENVIRONMENT_NAME     — e.g. "smarthome"
+#   ACR_NAME             — e.g. "acrsmarthome6591"
 #
 # ============================================================
 
@@ -23,8 +24,9 @@ on:
 
 env:
   RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP || 'smarthome-rg' }}
-  LOCATION: ${{ vars.LOCATION || 'westeurope' }}
+  LOCATION: ${{ vars.LOCATION || 'centralus' }}
   ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME || 'smarthome' }}
+  ACR_NAME: ${{ vars.ACR_NAME }}
 
 jobs:
   deploy:
@@ -47,55 +49,26 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       # --------------------------------------------------
-      # Prepare ACR name (strip hyphens, append "acr")
+      # Build & Push Docker Images (local build + push to ACR)
       # --------------------------------------------------
-      - name: Set derived variables
-        run: |
-          ACR_NAME=$(echo "${{ env.ENVIRONMENT_NAME }}" | tr -d '-')acr
-          echo "ACR_NAME=$ACR_NAME" >> $GITHUB_ENV
+      - name: Login to ACR
+        run: az acr login --name $ACR_NAME
 
-      # --------------------------------------------------
-      # Ensure Resource Group & ACR exist
-      # --------------------------------------------------
-      - name: Create Resource Group
-        run: az group create --name $RESOURCE_GROUP --location $LOCATION --output none
-
-      - name: Create Container Registry
+      - name: Build & push Mosquitto image
         run: |
-          az acr create \
-            --resource-group $RESOURCE_GROUP \
-            --name $ACR_NAME \
-            --sku Basic \
-            --admin-enabled true \
-            --output none
+          docker build -t $ACR_NAME.azurecr.io/$ENVIRONMENT_NAME-mqtt:latest -f Dockerfile.mosquitto .
+          docker push $ACR_NAME.azurecr.io/$ENVIRONMENT_NAME-mqtt:latest
 
-      # --------------------------------------------------
-      # Build & Push Docker Images (cloud build via ACR)
-      # --------------------------------------------------
-      - name: Build Mosquitto image
+      - name: Build & push API image
         run: |
-          az acr build \
-            --registry $ACR_NAME \
-            --image ${{ env.ENVIRONMENT_NAME }}-mqtt:latest \
-            --file Dockerfile.mosquitto \
-            .
-
-      - name: Build API image
-        run: |
-          az acr build \
-            --registry $ACR_NAME \
-            --image ${{ env.ENVIRONMENT_NAME }}-api:latest \
-            --file SmartHome.Api/Dockerfile \
-            .
+          docker build -t $ACR_NAME.azurecr.io/$ENVIRONMENT_NAME-api:latest -f SmartHome.Api/Dockerfile .
+          docker push $ACR_NAME.azurecr.io/$ENVIRONMENT_NAME-api:latest
         working-directory: backend/src
 
-      - name: Build Simulator image
+      - name: Build & push Simulator image
         run: |
-          az acr build \
-            --registry $ACR_NAME \
-            --image ${{ env.ENVIRONMENT_NAME }}-simulator:latest \
-            --file SmartHome.Simulator/Dockerfile \
-            .
+          docker build -t $ACR_NAME.azurecr.io/$ENVIRONMENT_NAME-simulator:latest -f SmartHome.Simulator/Dockerfile .
+          docker push $ACR_NAME.azurecr.io/$ENVIRONMENT_NAME-simulator:latest
         working-directory: backend/src
 
       # --------------------------------------------------
@@ -108,10 +81,11 @@ jobs:
             --resource-group $RESOURCE_GROUP \
             --template-file infra/main.bicep \
             --parameters \
-              environmentName=${{ env.ENVIRONMENT_NAME }} \
+              environmentName=$ENVIRONMENT_NAME \
               acrName=$ACR_NAME \
               sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }} \
               sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }} \
+              location=$LOCATION \
             --query "properties.outputs" \
             --output json)
 
@@ -144,17 +118,25 @@ jobs:
       # --------------------------------------------------
       # Deploy Frontend to Static Web App
       # --------------------------------------------------
-      - name: Deploy to Static Web App
+      - name: Get SWA deployment token
+        id: swa_token
         run: |
-          DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
+          TOKEN=$(az staticwebapp secrets list \
             --name $SWA_NAME \
             --resource-group $RESOURCE_GROUP \
             --query "properties.apiKey" \
             --output tsv)
+          echo "::add-mask::$TOKEN"
+          echo "DEPLOYMENT_TOKEN=$TOKEN" >> $GITHUB_ENV
 
-          npx --yes @azure/static-web-apps-cli@latest deploy ./frontend/dist \
-            --deployment-token $DEPLOYMENT_TOKEN \
-            --env production
+      - name: Deploy to Static Web App
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ env.DEPLOYMENT_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          skip_app_build: true
+          app_location: frontend/dist
 
       # --------------------------------------------------
       # Summary
