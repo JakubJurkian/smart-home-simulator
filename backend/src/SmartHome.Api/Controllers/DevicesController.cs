@@ -156,6 +156,7 @@ public class DevicesController(IDeviceService service, ILogger<DevicesController
         throw new UnauthorizedAccessException("User not logged in.");
     }
 
+    [AllowAnonymous]
     [HttpGet("all-system")] // /api/devices/all-system
     public async Task<ActionResult<IEnumerable<DeviceDto>>> GetAllSystemDevices()
     {

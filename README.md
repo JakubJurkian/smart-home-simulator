@@ -5,6 +5,8 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+![Azure](https://img.shields.io/badge/Azure-Deployed-0078D4?logo=microsoftazure&logoColor=white)
 
 > **Smart Home Simulator** is a fullstack IoT (Internet of Things) simulation platform for managing smart home devices. It provides real-time monitoring, device control, and comprehensive service history tracking through a modern web interface.
 
@@ -23,14 +25,116 @@
 ---
 
 ## Dockerized Ecosystem
+
 The entire platform is containerized using **Docker** and **Docker Compose**, allowing for a "one-command" setup of the full infrastructure.
 
-### Services Included:
-* **Backend API:** ASP.NET Core 10 service.
-* **Frontend:** Vite + React 19 application.
-* **MQTT Broker:** Eclipse Mosquitto for IoT messaging.
-* **IoT Simulator:** Automated device simulator generating real-time data.
-* **Database:** SQLite with persistent volume mapping.
+### Services Included
+
+| Service | Image / Build | Ports | Description |
+| :--- | :--- | :--- | :--- |
+| **API** | Multi-stage `.NET 10` Dockerfile | `5000:8080`, `9000:9000` | ASP.NET Core backend with EF Core + SQLite |
+| **Frontend** | Vite dev server Dockerfile | `5173:5173` | React 19 app with hot-reload via volume mount |
+| **MQTT Broker** | `eclipse-mosquitto:latest` | `1883` (TCP), `9001` (WS) | IoT message broker with persistent data |
+| **Simulator** | Multi-stage `.NET 10` Dockerfile | — | Publishes random temperature readings every 5s |
+
+### Multi-Stage Docker Builds
+
+Both the API and Simulator use **multi-stage Dockerfiles** to minimize image size:
+
+1. **Build stage** — uses the full .NET 10 SDK (~800 MB) to restore, compile, and publish.
+2. **Runtime stage** — uses the slim `aspnet:10.0` runtime image (~200 MB) with only the compiled DLLs.
+
+```dockerfile
+# Build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet publish "SmartHome.Api.csproj" -c Release -o /app/publish
+
+# Run
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "SmartHome.Api.dll"]
+```
+
+The API container includes a built-in **health check** (`/api/devices`) with 30-second intervals.
+
+### Docker Compose Networking
+
+All services share the default Compose network. Internal communication uses container names as hostnames:
+
+- Simulator → API: `http://api:8080/api/devices/all-system`
+- API → MQTT: `mqtt:1883`
+- Frontend → API: `http://localhost:5000/api` (browser-side, routed through host)
+
+---
+
+## Azure Cloud Deployment
+
+The project includes a complete **Infrastructure-as-Code** setup for deploying to Microsoft Azure.
+
+### Azure Resources
+
+| Resource | Azure Service | Purpose |
+| :--- | :--- | :--- |
+| **Backend API** | Container App (external ingress) | Runs the .NET API container on port 8080 |
+| **MQTT Broker** | Container App (internal TCP) | Mosquitto accessible only within the environment |
+| **Simulator** | Container App (no ingress) | Headless background container, no public access |
+| **Frontend** | Static Web App (Free tier) | Hosts the built React SPA globally via CDN |
+| **Database** | Azure SQL Database (Basic tier) | Production SQL Server replacing dev SQLite |
+| **Image Registry** | Azure Container Registry (Basic) | Stores Docker images for all container apps |
+| **Monitoring** | Log Analytics Workspace | Collects container logs and metrics |
+
+### Infrastructure as Code (Bicep)
+
+All Azure resources are defined in `infra/main.bicep` — a single declarative template that provisions the entire environment:
+
+```
+infra/
+└── main.bicep       # Container Apps Environment, SQL Server, ACR, Static Web App
+```
+
+### One-Command Deployment
+
+The `deploy.ps1` PowerShell script automates the full CI/CD pipeline locally:
+
+```powershell
+./deploy.ps1
+```
+
+**What it does (in order):**
+
+1. Reads configuration from GitHub CLI variables (`gh variable get`)
+2. Loads SQL credentials from a local `.env` file
+3. Logs into Azure Container Registry
+4. Builds and pushes all Docker images (MQTT, API, Simulator)
+5. Deploys Azure infrastructure via Bicep (`az deployment group create`)
+6. Fetches the dynamic API URL from the deployed Container App
+7. Builds the React frontend with the production API URL baked in
+8. Deploys the frontend to Azure Static Web Apps via SWA CLI
+
+### Dual Database Strategy
+
+The application uses **SQLite** for local development and **Azure SQL Server** for production. The switch is automatic based on `ASPNETCORE_ENVIRONMENT`:
+
+| Environment | Provider | Connection |
+| :--- | :--- | :--- |
+| `Development` | SQLite | `Data Source=smarthome.db` |
+| `Production` | SQL Server | `ConnectionStrings__DefaultConnection` env var |
+
+On first production startup, the API checks `INFORMATION_SCHEMA.TABLES` for existing schema and creates tables via `EnsureCreated()` if missing.
+
+### GitHub Actions CI/CD
+
+A `.github/workflows/azure-deploy.yml` pipeline automates deployment on push to `main`:
+
+1. Run all tests (unit, integration, BDD)
+2. Build and push Docker images to ACR
+3. Deploy infrastructure via Bicep
+4. Build and deploy frontend to Static Web Apps
+
+---
 
 ## Key Features
 
@@ -83,6 +187,14 @@ The entire platform is containerized using **Docker** and **Docker Compose**, al
 - ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=githubactions&logoColor=white) **GitHub Actions**
 - ![Docker](https://img.shields.io/badge/Docker-Orchestration-2496ED?logo=docker&logoColor=white) **Docker Compose**
 - ![Mosquitto](https://img.shields.io/badge/Mosquitto-Broker-3C5280?logo=eclipsemosquitto&logoColor=white) **Eclipse Mosquitto**
+
+**Cloud (Azure):**
+
+- ![Azure](https://img.shields.io/badge/Container_Apps-Hosting-0078D4?logo=microsoftazure&logoColor=white) **Azure Container Apps** (API, MQTT, Simulator)
+- ![Azure](https://img.shields.io/badge/Static_Web_Apps-Frontend-0078D4?logo=microsoftazure&logoColor=white) **Azure Static Web Apps** (React SPA)
+- ![Azure](https://img.shields.io/badge/SQL_Database-Production_DB-0078D4?logo=microsoftazure&logoColor=white) **Azure SQL Database**
+- ![Azure](https://img.shields.io/badge/Container_Registry-Images-0078D4?logo=microsoftazure&logoColor=white) **Azure Container Registry**
+- ![Bicep](https://img.shields.io/badge/Bicep-IaC-0078D4?logo=microsoftazure&logoColor=white) **Bicep** (Infrastructure as Code)
 
 ---
 
@@ -277,6 +389,10 @@ With the backend running, connect via PuTTY or any raw TCP client:
 * **Secure Authentication:** HttpOnly cookies with `Secure`, `SameSite=Strict` flags and BCrypt password hashing.
 * **Comprehensive Logging:** Serilog with daily file rotation for production debugging.
 * **Responsive UI:** Mobile-first design with Tailwind CSS breakpoints.
+* **Multi-Stage Docker Builds:** Separate build and runtime stages reduce final image size from ~800 MB to ~200 MB.
+* **Infrastructure as Code:** Azure resources fully defined in a Bicep template for reproducible, version-controlled deployments.
+* **Dual Database Strategy:** Automatic SQLite ↔ SQL Server switching based on environment, with zero code changes in repositories.
+* **Cross-Origin Cookie Auth:** Correctly configured `SameSite=None`, `Secure`, and CORS `AllowCredentials` for cross-domain cookie authentication on Azure.
 
 ## License
 

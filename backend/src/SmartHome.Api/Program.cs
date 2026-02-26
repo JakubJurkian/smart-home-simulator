@@ -58,6 +58,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.Cookie.Name = "SmartHomeAuth";
         options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
 
         if (builder.Environment.IsEnvironment("Testing"))
         {
@@ -76,11 +77,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return Task.CompletedTask;
         };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
     });
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
-    options.CheckConsentNeeded = context => true;
+    options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.None;
 });
 
@@ -121,17 +127,40 @@ if (app.Environment.EnvironmentName != "Testing")
         var db = scope.ServiceProvider.GetRequiredService<SmartHomeDbContext>();
         try
         {
-            if (app.Environment.IsDevelopment())
+            // Check if the actual model tables exist (not just __EFMigrationsHistory)
+            bool modelTablesExist;
+            try
             {
-                // For SQLite locally, we just ensure the DB file and tables exist
+                // If this query succeeds, the Users table exists
+                _ = db.Database.SqlQueryRaw<int>(
+                    "SELECT COUNT(*) AS [Value] FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users'")
+                    .ToList();
+                modelTablesExist = db.Database.SqlQueryRaw<int>(
+                    "SELECT COUNT(*) AS [Value] FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users'")
+                    .Single() > 0;
+            }
+            catch
+            {
+                modelTablesExist = false;
+            }
+
+            if (!modelTablesExist)
+            {
+                // Remove stale __EFMigrationsHistory (left by prior failed deployments)
+                // so EnsureCreated() doesn't skip table creation
+                try
+                {
+                    db.Database.ExecuteSqlRaw(
+                        "IF OBJECT_ID('__EFMigrationsHistory') IS NOT NULL DROP TABLE [__EFMigrationsHistory]");
+                }
+                catch { /* ignore if it doesn't exist */ }
+
                 db.Database.EnsureCreated();
-                Console.WriteLine("SQLite database is ready.");
+                Console.WriteLine($"Database tables created ({app.Environment.EnvironmentName}).");
             }
             else
             {
-                // For SQL Server on Azure, we apply formal migrations
-                db.Database.Migrate();
-                Console.WriteLine("SQL Server migrations applied successfully.");
+                Console.WriteLine($"Database is ready ({app.Environment.EnvironmentName}).");
             }
         }
         catch (Exception ex)
@@ -145,11 +174,8 @@ if (app.Environment.EnvironmentName != "Testing")
 app.UseCors("AllowReactApp");
 app.UseSerilogRequestLogging();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
