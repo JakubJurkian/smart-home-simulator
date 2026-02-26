@@ -1,0 +1,169 @@
+# ============================================================
+# Smart Home Simulator — Azure CI/CD Pipeline (GitHub Actions)
+# ============================================================
+#
+# Required GitHub Secrets:
+#   AZURE_CREDENTIALS    — Service principal JSON (az ad sp create-for-rbac --sdk-auth)
+#   SQL_ADMIN_LOGIN      — SQL Server admin username
+#   SQL_ADMIN_PASSWORD   — SQL Server admin password
+#
+# Required GitHub Variables (Settings → Variables):
+#   RESOURCE_GROUP       — e.g. "smarthome-rg"
+#   LOCATION             — e.g. "westeurope"
+#   ENVIRONMENT_NAME     — e.g. "smarthome"
+#
+# ============================================================
+
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP || 'smarthome-rg' }}
+  LOCATION: ${{ vars.LOCATION || 'westeurope' }}
+  ENVIRONMENT_NAME: ${{ vars.ENVIRONMENT_NAME || 'smarthome' }}
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------------------------------------
+      # Checkout
+      # --------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # Azure Login
+      # --------------------------------------------------
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # --------------------------------------------------
+      # Prepare ACR name (strip hyphens, append "acr")
+      # --------------------------------------------------
+      - name: Set derived variables
+        run: |
+          ACR_NAME=$(echo "${{ env.ENVIRONMENT_NAME }}" | tr -d '-')acr
+          echo "ACR_NAME=$ACR_NAME" >> $GITHUB_ENV
+
+      # --------------------------------------------------
+      # Ensure Resource Group & ACR exist
+      # --------------------------------------------------
+      - name: Create Resource Group
+        run: az group create --name $RESOURCE_GROUP --location $LOCATION --output none
+
+      - name: Create Container Registry
+        run: |
+          az acr create \
+            --resource-group $RESOURCE_GROUP \
+            --name $ACR_NAME \
+            --sku Basic \
+            --admin-enabled true \
+            --output none
+
+      # --------------------------------------------------
+      # Build & Push Docker Images (cloud build via ACR)
+      # --------------------------------------------------
+      - name: Build Mosquitto image
+        run: |
+          az acr build \
+            --registry $ACR_NAME \
+            --image ${{ env.ENVIRONMENT_NAME }}-mqtt:latest \
+            --file Dockerfile.mosquitto \
+            .
+
+      - name: Build API image
+        run: |
+          az acr build \
+            --registry $ACR_NAME \
+            --image ${{ env.ENVIRONMENT_NAME }}-api:latest \
+            --file SmartHome.Api/Dockerfile \
+            .
+        working-directory: backend/src
+
+      - name: Build Simulator image
+        run: |
+          az acr build \
+            --registry $ACR_NAME \
+            --image ${{ env.ENVIRONMENT_NAME }}-simulator:latest \
+            --file SmartHome.Simulator/Dockerfile \
+            .
+        working-directory: backend/src
+
+      # --------------------------------------------------
+      # Deploy Infrastructure (Bicep)
+      # --------------------------------------------------
+      - name: Deploy Bicep template
+        id: bicep
+        run: |
+          OUTPUT=$(az deployment group create \
+            --resource-group $RESOURCE_GROUP \
+            --template-file infra/main.bicep \
+            --parameters \
+              environmentName=${{ env.ENVIRONMENT_NAME }} \
+              acrName=$ACR_NAME \
+              sqlAdminLogin=${{ secrets.SQL_ADMIN_LOGIN }} \
+              sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }} \
+            --query "properties.outputs" \
+            --output json)
+
+          API_URL=$(echo $OUTPUT | jq -r '.apiUrl.value')
+          SWA_NAME=$(echo $OUTPUT | jq -r '.staticWebAppName.value')
+          SWA_HOSTNAME=$(echo $OUTPUT | jq -r '.staticWebAppHostname.value')
+
+          echo "API_URL=$API_URL" >> $GITHUB_ENV
+          echo "SWA_NAME=$SWA_NAME" >> $GITHUB_ENV
+          echo "SWA_HOSTNAME=$SWA_HOSTNAME" >> $GITHUB_ENV
+
+      # --------------------------------------------------
+      # Build Frontend
+      # --------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ env.API_URL }}/api
+        run: |
+          npm ci
+          npm run build
+
+      # --------------------------------------------------
+      # Deploy Frontend to Static Web App
+      # --------------------------------------------------
+      - name: Deploy to Static Web App
+        run: |
+          DEPLOYMENT_TOKEN=$(az staticwebapp secrets list \
+            --name $SWA_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --query "properties.apiKey" \
+            --output tsv)
+
+          npx --yes @azure/static-web-apps-cli@latest deploy ./frontend/dist \
+            --deployment-token $DEPLOYMENT_TOKEN \
+            --env production
+
+      # --------------------------------------------------
+      # Summary
+      # --------------------------------------------------
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Complete! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | https://$SWA_HOSTNAME |" >> $GITHUB_STEP_SUMMARY
+          echo "| API      | $API_URL |" >> $GITHUB_STEP_SUMMARY

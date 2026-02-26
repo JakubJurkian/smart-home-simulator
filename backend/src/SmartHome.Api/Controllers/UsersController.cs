@@ -13,8 +13,7 @@ namespace SmartHome.Api.Controllers;
 [Route("api/users")]
 public class UsersController(
     IUserService userService,
-    ILogger<UsersController> logger,
-    IHostEnvironment env) : ControllerBase
+    ILogger<UsersController> logger) : ControllerBase
 {
     private Guid GetCurrentUserId()
     {
@@ -99,9 +98,10 @@ public class UsersController(
 
     // POST: api/users/logout
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
-        Response.Cookies.Delete("userId");
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        Response.Cookies.Delete("SmartHomeAuth");
         return Ok(new { message = "Logged out" });
     }
 
@@ -160,7 +160,8 @@ public class UsersController(
                 return NotFound(new { message = "User not found." });
             }
 
-            Response.Cookies.Delete("userId");
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            Response.Cookies.Delete("SmartHomeAuth");
 
             logger.LogInformation("User account {UserId} deleted.", id);
             return NoContent(); // 204

@@ -27,10 +27,17 @@ public class RoomsController(IRoomService roomService, ILogger<RoomsController> 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = GetCurrentUserId();
-        var rooms = await roomService.GetAllAsync(userId);
-        var roomDtos = rooms.Select(r => new RoomDto(r.Id, r.Name));
-        return Ok(roomDtos);
+        try
+        {
+            var userId = GetCurrentUserId();
+            var rooms = await roomService.GetAllAsync(userId);
+            var roomDtos = rooms.Select(r => new RoomDto(r.Id, r.Name));
+            return Ok(roomDtos);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     // POST: api/rooms
