@@ -1,0 +1,143 @@
+# ============================================================
+# Smart Home Simulator — Hybrid CI/CD Pipeline
+# ============================================================
+#
+# Strategy:
+#   CI (GitHub Actions) — Build, test, verify Docker images, deploy frontend
+#   CD (Local)          — Container deployment via ./deploy.ps1
+#
+# Why hybrid?
+#   University Azure accounts block Entra ID (no Service Principal),
+#   so full `azure/login` is not possible. The SWA deployment token
+#   bypasses this limitation for frontend deployment.
+#
+# Required GitHub Secrets:
+#   AZURE_STATIC_WEB_APPS_API_TOKEN — SWA deployment token
+#     (get it: az staticwebapp secrets list --name <swa-name> -g <rg> --query "properties.apiKey" -o tsv)
+#
+# Required GitHub Variables (Settings → Variables):
+#   API_FQDN — e.g. "smarthome-api.calmforest-ab7056a2.centralus.azurecontainerapps.io"
+#
+# ============================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ========================================================
+  # Job 1: Build & Test Backend
+  # ========================================================
+  build-backend:
+    name: Build & Test Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run Unit Tests
+        run: dotnet test tests/SmartHome.UnitTests/SmartHome.UnitTests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: Run Integration Tests
+        run: dotnet test tests/SmartHome.IntegrationTests/SmartHome.IntegrationTests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: Run BDD Tests
+        run: dotnet test tests/SmartHome.BDDTests/SmartHome.BDDTests.csproj --no-build --configuration Release --verbosity normal
+
+  # ========================================================
+  # Job 2: Verify Docker Images Build Successfully
+  # ========================================================
+  build-docker:
+    name: Verify Docker Builds
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -t smarthome-api:ci -f SmartHome.Api/Dockerfile .
+        working-directory: backend/src
+
+      - name: Build Simulator image
+        run: docker build -t smarthome-simulator:ci -f SmartHome.Simulator/Dockerfile .
+        working-directory: backend/src
+
+      - name: Build Mosquitto image
+        run: docker build -t smarthome-mqtt:ci -f Dockerfile.mosquitto .
+
+  # ========================================================
+  # Job 3: Build & Deploy Frontend to Azure Static Web App
+  # ========================================================
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://${{ vars.API_FQDN }}/api
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Azure Static Web App
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          skip_app_build: true
+          app_location: frontend/dist
+
+  # ========================================================
+  # Summary
+  # ========================================================
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-docker, deploy-frontend]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Pipeline Results :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Build & Tests | ${{ needs.build-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Image Builds | ${{ needs.build-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Deploy | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** Container apps (API, MQTT, Simulator) are deployed locally via \`./deploy.ps1\`" >> $GITHUB_STEP_SUMMARY

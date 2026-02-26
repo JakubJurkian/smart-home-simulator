@@ -4,9 +4,13 @@ using MQTTnet;
 using MQTTnet.Client;
 
 // CONFIGURATION
-const string API_URL = "http://localhost:5187/api/devices/all-system";
-const string BROKER_HOST = "test.mosquitto.org"; // Public test broker
-const int BROKER_PORT = 1883;
+string API_URL = Environment.GetEnvironmentVariable("API_URL")
+    ?? "http://localhost:5187/api/devices/all-system";
+
+string BROKER_HOST = Environment.GetEnvironmentVariable("BROKER_HOST")
+    ?? "test.mosquitto.org";
+
+int BROKER_PORT = int.TryParse(Environment.GetEnvironmentVariable("BROKER_PORT"), out int p) ? p : 1883;
 
 Console.WriteLine("--- IoT Device Simulator (Thermometer) ---");
 

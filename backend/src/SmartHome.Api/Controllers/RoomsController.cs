@@ -1,20 +1,25 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Api.Dtos;
 using SmartHome.Domain.Interfaces.Rooms;
 
 namespace SmartHome.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/rooms")]
 public class RoomsController(IRoomService roomService, ILogger<RoomsController> logger) : ControllerBase
 {
     private Guid GetCurrentUserId()
     {
-        if (Request.Cookies.TryGetValue("userId", out var userIdString) &&
-            Guid.TryParse(userIdString, out var userId))
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (Guid.TryParse(userIdClaim, out var userId))
         {
             return userId;
         }
+
         throw new UnauthorizedAccessException("User not logged in.");
     }
 
@@ -22,10 +27,17 @@ public class RoomsController(IRoomService roomService, ILogger<RoomsController> 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = GetCurrentUserId();
-        var rooms = await roomService.GetAllAsync(userId);
-        var roomDtos = rooms.Select(r => new RoomDto(r.Id, r.Name));
-        return Ok(roomDtos);
+        try
+        {
+            var userId = GetCurrentUserId();
+            var rooms = await roomService.GetAllAsync(userId);
+            var roomDtos = rooms.Select(r => new RoomDto(r.Id, r.Name));
+            return Ok(roomDtos);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
+        }
     }
 
     // POST: api/rooms

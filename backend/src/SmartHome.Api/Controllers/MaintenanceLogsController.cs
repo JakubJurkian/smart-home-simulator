@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Api.Dtos;
 using SmartHome.Domain.Interfaces.MaintenanceLogs;
 
 namespace SmartHome.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/logs")]
 public class MaintenanceLogsController(IMaintenanceLogService logService, ILogger<MaintenanceLogsController> logger) : ControllerBase

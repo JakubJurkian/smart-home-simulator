@@ -48,10 +48,10 @@ function App() {
         const res = await api.auth.me();
         if (res.ok) {
           const userData = await res.json();
-          console.log("Session restored for:", userData.username);
+          // console.log("Session restored for:", userData.username);
           setUser(userData);
         } else {
-          console.log("No active session found.");
+          // console.log("No active session found.");
         }
       } catch (err) {
         console.error("Session check failed", err);
@@ -112,7 +112,12 @@ function App() {
     if (!user) return;
 
     const connection = new HubConnectionBuilder()
-      .withUrl("http://localhost:5000/smarthomehub")
+      .withUrl(
+        `${import.meta.env.VITE_API_URL.replace("/api", "")}/smarthomehub`,
+        {
+          withCredentials: true,
+        },
+      )
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
