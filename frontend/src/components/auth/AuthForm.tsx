@@ -123,7 +123,7 @@ const AuthForm = ({
                 ? "cursor-not-allowed"
                 : "cursor-pointer hover:underline"
             }  text-blue-600 font-semibold `}
-            disabled={isLoading ? true : false}
+            disabled={isLoading}
           >
             {isLoginMode ? "Register here" : "Log in here"}
           </button>

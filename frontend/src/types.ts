@@ -33,6 +33,7 @@ export interface DeviceCardProps {
   onDelete: (id: string) => void;
   onToggle: (id: string, action: "turn-on" | "turn-off") => void;
   onOpenLogs: (device: Device) => void;
+  onRename: (id: string, newName: string) => void;
   temp?: number;
 }
 
