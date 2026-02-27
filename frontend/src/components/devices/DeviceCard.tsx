@@ -42,6 +42,7 @@ const DeviceCard = ({
   onToggle,
   temp,
   onOpenLogs,
+  onRename,
 }: DeviceCardProps) => {
   const isBulb = device.type === "LightBulb";
   const isSensor = device.type === "TemperatureSensor";
@@ -77,8 +78,7 @@ const DeviceCard = ({
       const res = await api.devices.rename(device.id, editedName.trim());
       if (!res.ok) throw new Error("Failed to rename");
 
-      // Direct mutation for instant UI feedback
-      device.name = editedName.trim();
+      onRename(device.id, editedName.trim());
       setIsEditing(false);
       setNameError(null);
     } catch (err) {
